@@ -1,0 +1,321 @@
+<!--
+The MIT License (MIT)
+
+Copyright (c) 2016 Goran Sarenkapa (JordanGS), and a number of other of contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+-->
+
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define"
+  xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+  <!-- This jelly script is used for per-project configuration. See global.jelly for a general discussion about jelly script. -->
+
+  <!-- JDK -->
+  <f:section title="${%Java}" />
+  <j:set var="jdks" value="${app.JDKs}" />
+  <f:entry title="${%JDK}" field="jdk">
+    <select class="setting-input validated" name="jdk" checkUrl="'${rootURL}/defaultJDKCheck?value='+this.value">
+      <option>${%InheritFromJob}</option>
+      <j:forEach var="inst" items="${jdks}">
+        <f:option selected="${inst.name==instance.JDK.name}" value="${inst.name}">${inst.name}</f:option>
+      </j:forEach>
+    </select>
+  </f:entry>
+
+  <f:section title="${%Installation Method}" />
+  <f:radioBlock title="${%Custom Tools Installation}" name="autoInstall" value="true" checked="${instance == null || instance.autoInstall == true}" inline="true">
+    <f:entry title=""></f:entry>
+    <f:entry title="${%Name}" field="toolUsed">
+      <f:select />
+    </f:entry>
+  </f:radioBlock>
+  <f:radioBlock title="${%System Installed}" name="autoInstall" value="false" checked="${instance.autoInstall == false}" inline="true">
+    <f:entry title=""></f:entry>
+    <f:entry title="${%ZAP Home}" field="zapHome">
+      <f:textbox default="ZAPROXY_HOME" clazz="required" />
+    </f:entry>
+  </f:radioBlock>
+
+  <f:section title="${%Run Configurations}" />
+  <f:advanced>
+    <f:entry title="${%Initialization Timeout}"
+      field="timeout" description="Enter a value in seconds">
+      <f:number default="60" clazz="required positive-number" />
+    </f:entry>
+
+    <f:section title="${%Add ZAP command line option}">
+      <f:block>
+        <f:repeatableProperty field="cmdLinesZAP" add="${%Add}" />
+      </f:block>
+    </f:section>
+  </f:advanced>
+
+  <f:section title="${%ZAP Settings}">
+    <f:entry title="${%Path}" field="zapSettingsDir">
+      <f:textbox clazz="required" />
+    </f:entry>
+  </f:section>
+
+  <f:section title="${%Session Management}" />
+  <j:invoke on="${descriptor}" method="setWorkspace">
+    <j:arg type="hudson.FilePath" value="${it.someWorkspace}" />
+  </j:invoke>
+  <f:radioBlock title="${%Load Session}" name="autoLoadSession" value="true" checked="${instance == null || instance.autoLoadSession == true}" inline="true">
+    <f:entry title=""></f:entry>
+    <f:entry title="${%Path}" field="loadSession">
+      <f:select />
+    </f:entry>
+  </f:radioBlock>
+  <f:radioBlock title="${%Persist Session}" name="autoLoadSession" value="false" checked="${instance.autoLoadSession == false}" inline="true">
+    <f:entry title=""></f:entry>
+    <f:entry title="${%Filename}" field="sessionFilename">
+      <f:textbox />
+    </f:entry>
+    <f:nested>
+      <table width="100%">
+        <f:entry title=""></f:entry>
+        <f:optionalBlock title="${%Remove External Sites}" field="removeExternalSites" inline="true">
+          <f:entry title=""></f:entry>
+          <f:entry title="${%Internal Sites}" field="internalSites">
+            <f:textarea />
+          </f:entry>
+        </f:optionalBlock>
+      </table>
+    </f:nested>
+  </f:radioBlock>
+
+  <f:section title="${%Session Properties}">
+    <f:entry title="${%Context Name}" field="contextName">
+      <f:textbox clazz="required" />
+    </f:entry>
+
+    <f:entry title="${%Include in Context}" field="includedURL">
+      <f:textarea />
+    </f:entry>
+
+    <f:entry title="${%Exclude from Context}" field="excludedURL">
+      <f:textarea />
+    </f:entry>
+
+    <f:entry>
+      <f:optionalBlock title="${%Authentication}" field="authMode" inline="true">
+        <f:entry>
+          <table width="100%">
+            <f:entry title="------------------------------------------------------------"></f:entry>
+            <f:entry title="${%Username}" field="username">
+              <f:textbox clazz="required" />
+            </f:entry>
+            <f:entry title="${%Password}" field="password">
+              <f:password clazz="required" />
+            </f:entry>
+            <f:entry title="${%Logged in Indicator}" field="loggedInIndicator">
+              <f:textbox clazz="required" />
+            </f:entry>
+
+            <f:entry title="------------------------------------------------------------"></f:entry>
+            <f:radioBlock title="${%Form-based Authentication}" name="authMethod" value="FORM_BASED" checked="${instance == null || instance.isAuthMethod('FORM_BASED')}" inline="true">
+              <f:nested>
+                <f:entry title=""></f:entry>
+                <f:entry title="${%Login Form Target URL}" field="loginURL">
+                  <f:textbox clazz="required" />
+                </f:entry>
+                <f:entry title="${%Username Parameter}" field="usernameParameter">
+                  <f:textbox clazz="required" />
+                </f:entry>
+                <f:entry title="${%Password Parameter}" field="passwordParameter">
+                  <f:textbox clazz="required" />
+                </f:entry>
+                <f:entry title="${%Extra POST Data}" field="extraPostData">
+                  <f:textbox />
+                </f:entry>
+              </f:nested>
+            </f:radioBlock>
+
+            <f:radioBlock title="${%Script-based Authentication}" name="authMethod" value="SCRIPT_BASED" checked="${instance.isAuthMethod('SCRIPT_BASED')}" inline="true">
+              <f:nested>
+                <f:entry title=""></f:entry>
+                <f:entry title="${%Script}" field="authScript">
+                  <f:select />
+                </f:entry>
+                <f:block>
+                  <f:repeatableProperty field="authScriptParams" add="${%Add Script Parameter}"/>
+                </f:block>
+              </f:nested>
+            </f:radioBlock>
+            <f:entry title="------------------------------------------------------------"></f:entry>
+          </table>
+        </f:entry>
+      </f:optionalBlock>
+    </f:entry>
+  </f:section>
+
+  <f:section title="${%Attack Mode}">
+    <f:entry title="${%Starting Point}" field="targetURL">
+      <f:textbox clazz="required" />
+    </f:entry>
+    <f:entry>
+      <f:optionalBlock title="${%Spider Scan}" field="spiderScanURL" inline="true">
+        <f:entry>
+          <table width="100%">
+            <f:optionalBlock title="${%Recurse}" field="spiderScanRecurse" checked="${instance == null || instance.spiderScanRecurse == true}" inline="true" />
+            <f:optionalBlock title="${%Subtree Only}" field="spiderScanSubtreeOnly" inline="true" />
+            <f:entry title="${%Max Children to Crawl}" field="spiderScanMaxChildrenToCrawl">
+              <f:textbox default="0" clazz="required" />
+            </f:entry>
+          </table>
+        </f:entry>
+      </f:optionalBlock>
+
+      <f:optionalBlock title="${%AJAX Spider}" field="ajaxSpiderURL" inline="true">
+        <f:entry>
+          <table width="100%">
+            <f:optionalBlock title="${%In Scope Only}" field="ajaxSpiderInScopeOnly" inline="true" />
+          </table>
+        </f:entry>
+      </f:optionalBlock>
+
+      <f:optionalBlock title="${%Active Scan}" field="activeScanURL" inline="true">
+        <f:entry>
+          <table width="100%">
+            <f:entry title="${%Policy}" field="activeScanPolicy">
+               <f:select />
+            </f:entry>
+            <f:optionalBlock title="${%Recurse}" field="activeScanRecurse" checked="${instance == null || instance.activeScanRecurse == true}" inline="true" />
+          </table>
+        </f:entry>
+      </f:optionalBlock>
+    </f:entry>
+  </f:section>
+
+  <f:section title="${%Finalize Run}">
+    <f:optionalBlock title="${%Generate Reports}" field="generateReports" inline="true">
+      <f:entry>
+        <table width="100%">
+          <f:entry title="------------------------------------------------------------"></f:entry>
+          <f:optionalBlock title="${%Clean Workspace Reports}" field="deleteReports" inline="true" />
+          <f:entry title="${%Filename}" field="reportFilename">
+            <f:textbox default="JENKINS_ZAP_VULNERABILITY_REPORT" clazz="required" />
+          </f:entry>
+          <f:radioBlock title="${%Generate Report}" name="selectedReportMethod" value="DEFAULT_REPORT" checked="${instance == null || instance.isSelectedReportMethod('DEFAULT_REPORT')}" inline="true">
+            <f:nested>
+              <f:entry title=""></f:entry>
+              <f:entry title="${%Format}" field="selectedReportFormats">
+                <select name="selectedReportFormats" multiple="multiple" size="${descriptor.getAllFormats().size()}" class="setting-input select">
+                  <j:forEach var="aFormat" items="${descriptor.getAllFormats()}">
+                    <j:choose>
+                      <j:when test="${instance.selectedReportFormats.contains(aFormat)}">
+                        <option value="${aFormat}" selected="selected">${aFormat}</option>
+                      </j:when>
+                      <j:otherwise>
+                        <option value="${aFormat}">${aFormat}</option>
+                      </j:otherwise>
+                    </j:choose>
+                  </j:forEach>
+                </select>
+              </f:entry>
+            </f:nested>
+          </f:radioBlock>
+          <f:radioBlock title="${%Export Report}" name="selectedReportMethod" value="EXPORT_REPORT" checked="${instance.isSelectedReportMethod('EXPORT_REPORT')}" inline="true">
+            <f:nested>
+              <f:entry title=""></f:entry>
+              <f:entry title="${%Format}" field="selectedExportFormats">
+                <select name="selectedExportFormats" multiple="multiple" size="${descriptor.getAllExportFormats().size()}" class="setting-input select">
+                  <j:forEach var="aFormat" items="${descriptor.getAllExportFormats()}">
+                    <j:choose>
+                      <j:when test="${instance.selectedExportFormats.contains(aFormat)}">
+                        <option value="${aFormat}" selected="selected">${aFormat}</option>
+                      </j:when>
+                      <j:otherwise>
+                        <option value="${aFormat}">${aFormat}</option>
+                      </j:otherwise>
+                    </j:choose>
+                  </j:forEach>
+                </select>
+              </f:entry>
+              <f:section title="${%Source Details}" >
+                <f:entry title="${%Title}" field="exportreportTitle">
+                  <f:textbox />
+                </f:entry>
+                <f:entry title="${%By}" field="exportreportBy">
+                  <f:textbox />
+                </f:entry>
+                <f:entry title="${%For}" field="exportreportFor">
+                  <f:textbox />
+                </f:entry>
+                <f:entry title="${%Scan Date}" field="exportreportScanDate">
+                  <f:textbox />
+                </f:entry>
+                <f:entry title="${%Report Date}" field="exportreportReportDate">
+                  <f:textbox />
+                </f:entry>
+                <f:entry title="${%Scan Version}" field="exportreportScanVersion">
+                  <f:textbox />
+                </f:entry>
+                <f:entry title="${%Report Version}" field="exportreportReportVersion">
+                  <f:textbox />
+                </f:entry>
+                <f:entry title="${%Description}" field="exportreportReportDescription">
+                  <f:textarea />
+                </f:entry>
+              </f:section>
+              <f:section title="${%Alert Severity}" >
+                <f:optionalBlock title="${%High Alerts}" field="exportreportAlertHigh" inline="true" checked="${instance == null || instance.exportreportAlertHigh == true}" />
+                <f:optionalBlock title="${%Medium Alerts}" field="exportreportAlertMedium" inline="true" checked="${instance == null || instance.exportreportAlertMedium == true}" />
+                <f:optionalBlock title="${%Low Alerts}" field="exportreportAlertLow" inline="true" checked="${instance == null || instance.exportreportAlertLow == true}" />
+                <f:optionalBlock title="${%Informational Alerts}" field="exportreportAlertInformational" inline="true" checked="${instance == null || instance.exportreportAlertInformational == true}" />
+              </f:section>
+              <f:section title="${%Alert Details}" >
+                <f:optionalBlock title="${%CWE ID}" field="exportreportCWEID" inline="true" checked="${instance == null || instance.exportreportCWEID == true}" />
+                <f:optionalBlock title="${%WASC ID}" field="exportreportWASCID" inline="true" checked="${instance == null || instance.exportreportWASCID == true}" />
+                <f:optionalBlock title="${%Description}" field="exportreportDescription" inline="true" checked="${instance == null || instance.exportreportDescription == true}" />
+                <f:optionalBlock title="${%Other Info}" field="exportreportOtherInfo" inline="true" checked="${instance == null || instance.exportreportOtherInfo == true}" />
+                <f:optionalBlock title="${%Solution}" field="exportreportSolution" inline="true" checked="${instance == null || instance.exportreportSolution == true}" />
+                <f:optionalBlock title="${%Reference}" field="exportreportReference" inline="true" checked="${instance == null || instance.exportreportReference == true}" />
+                <f:optionalBlock title="${%Request Header}" field="exportreportRequestHeader" inline="true" />
+                <f:optionalBlock title="${%Response Header}" field="exportreportResponseHeader" inline="true" />
+                <f:optionalBlock title="${%Request Body}" field="exportreportRequestBody" inline="true" />
+                <f:optionalBlock title="${%Response Body}" field="exportreportResponseBody" inline="true" />
+              </f:section>
+            </f:nested>
+          </f:radioBlock>
+          <f:entry title="------------------------------------------------------------"></f:entry>
+        </table>
+      </f:entry>
+    </f:optionalBlock>
+
+    <f:optionalBlock title="${%Create JIRA Issues - SEE WARNING}" field="jiraCreate" inline="true">
+      <f:entry>
+        <table width="100%">
+          <f:entry title="${%Project Key}" field="jiraProjectKey">
+            <f:textbox clazz="required" />
+          </f:entry>
+          <f:entry title="${%Assignee}" field="jiraAssignee">
+            <f:textbox clazz="required" />
+          </f:entry>
+
+          <f:optionalBlock title="${%Export High Alerts}" field="jiraAlertHigh" inline="true" />
+          <f:optionalBlock title="${%Export Medium Alerts}" field="jiraAlertMedium" inline="true" />
+          <f:optionalBlock title="${%Export Low Alerts}" field="jiraAlertLow" inline="true" />
+          <f:optionalBlock title="${%Filter Issue URL's by Resource Type}" field="jiraFilterIssuesByResourceType" inline="true" />
+        </table>
+      </f:entry>
+    </f:optionalBlock>
+  </f:section>
+</j:jelly>

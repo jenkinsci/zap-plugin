@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.jenkins-ci.plugins</groupId>
+    <artifactId>plugin</artifactId>
+    <version>2.11</version>
+    <relativePath />
+  </parent>
+  <groupId>org.jenkins-ci.plugins</groupId>
+  <artifactId>zap</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <packaging>hpi</packaging>
+
+  <properties>
+    <jenkins.version>1.580.1</jenkins.version>
+    <java.level>8</java.level>
+    <jenkins-test-harness.version>2.13</jenkins-test-harness.version>
+    <findbugs.failOnError>false</findbugs.failOnError>
+  </properties>
+
+  <name>OWASP Zed Attack Proxy ZAP Plugin</name>
+  <description>The Official OWASP ZAP Jenkins Plugin extends the functionality of the ZAP security tool into a CI Environment.</description>
+  <url>https://wiki.jenkins-ci.org/display/JENKINS/zap+plugin</url>
+
+  <licenses>
+    <license>
+      <name>MIT License</name>
+      <url>http://opensource.org/licenses/MIT</url>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <id>jordangs</id>
+      <name>Goran Sarenkapa</name>
+      <email>developer.goran@gmail.com</email>
+    </developer>
+    <developer>
+      <id>mabdelmoez</id>
+      <name>Mostafa AbdelMoez</name>
+      <email>mabdelmoez.dev@gmail.com</email>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:https://github.com/jenkinsci/zap-plugin.git</connection>
+    <developerConnection>scm:git:https://github.com/jenkinsci/zap-plugin.git</developerConnection>
+    <url>https://github.com/jenkinsci/zap-plugin.git</url>
+  </scm>
+
+  <repositories>
+    <repository>
+      <id>repo.jenkins-ci.org</id>
+      <url>https://repo.jenkins-ci.org/public/</url>
+    </repository>
+  </repositories>
+
+  <pluginRepositories>
+    <pluginRepository>
+      <id>repo.jenkins-ci.org</id>
+      <url>https://repo.jenkins-ci.org/public/</url>
+    </pluginRepository>
+  </pluginRepositories>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.jenkins-ci.plugins</groupId>
+      <artifactId>credentials</artifactId>
+      <version>1.9.4</version>
+    </dependency>
+    <dependency>
+      <groupId>org.zaproxy</groupId>
+      <artifactId>zap-clientapi</artifactId>
+      <version>1.0.0</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration>
+          <additionalparam>-Xdoclint:none</additionalparam>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  </project>
