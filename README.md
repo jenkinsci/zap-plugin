@@ -1,4 +1,4 @@
-[![Jenkins](https://jenkins.ci.cloudbees.com/buildStatus/icon?job=plugins/zap-plugin)](https://jenkins.ci.cloudbees.com/job/plugins/job/zap-plugin/)
+[![Jenkins](https://ci.jenkins.io/job/Plugins/job/zap-plugin/job/master/badge/icon)](https://ci.jenkins.io/job/Plugins/job/zap-plugin/job/master/)
 [![Coverity](https://scan.coverity.com/projects/10817/badge.svg)](https://scan.coverity.com/projects/jenkinsci-zap-plugin)
 [![Best Practices](https://bestpractices.coreinfrastructure.org/projects/490/badge)](https://bestpractices.coreinfrastructure.org/projects/490)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/jenkinsci/zap-plugin/blob/master/LICENSE)

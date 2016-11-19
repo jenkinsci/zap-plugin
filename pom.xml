@@ -20,7 +20,7 @@
     <findbugs.failOnError>false</findbugs.failOnError>
   </properties>
 
-  <name>OWASP Zed Attack Proxy ZAP Plugin</name>
+  <name>Official OWASP ZAP Jenkins Plugin</name>
   <description>The Official OWASP ZAP Jenkins Plugin extends the functionality of the ZAP security tool into a CI Environment.</description>
   <url>https://wiki.jenkins-ci.org/display/JENKINS/zap+plugin</url>
 
