@@ -25,5 +25,5 @@ SOFTWARE.
 <?jelly escape-by-default='true'?>
 <!-- This view is used to render the installed plugins page. -->
 <div>
-  The <a href="https://wiki.jenkins-ci.org/display/JENKINS/zaproxy+plugin">Official OWASP ZAP Jenkins Plugin</a> extends the functionality of the <a href="https://www.owasp.org/index.php/OWASP_Zed_Attack_Proxy_Project">ZAP</a> security tool into a CI Environment.
+  The <a href="https://wiki.jenkins-ci.org/display/JENKINS/zap+plugin">Official OWASP ZAP Jenkins Plugin</a> extends the functionality of the <a href="https://www.owasp.org/index.php/OWASP_Zed_Attack_Proxy_Project">ZAP</a> security tool into a CI Environment.
 </div>
