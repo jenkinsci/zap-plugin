@@ -1,3 +1,4 @@
+[![Release](https://img.shields.io/github/release/jenkinsci/zap-plugin.svg)](https://github.com/jenkinsci/zap-plugin/releases)
 [![Jenkins](https://ci.jenkins.io/job/Plugins/job/zap-plugin/job/master/badge/icon)](https://ci.jenkins.io/job/Plugins/job/zap-plugin/job/master/)
 [![Coverity](https://scan.coverity.com/projects/10817/badge.svg)](https://scan.coverity.com/projects/jenkinsci-zap-plugin)
 [![Best Practices](https://bestpractices.coreinfrastructure.org/projects/490/badge)](https://bestpractices.coreinfrastructure.org/projects/490)
@@ -27,9 +28,17 @@ You can also:
   - Run as Pre-Build as part of a <b>[Selenium](http://docs.seleniumhq.org/)</b> Build
   - Generate Reports (**.xhtml** [![XHTML](https://wiki.jenkins-ci.org/download/attachments/102662470/html.png)](http://www.w3schools.com/html/html_xhtml.asp), **.xml** [![XML](https://wiki.jenkins-ci.org/download/attachments/102662470/xml.png)](http://www.w3schools.com/xml/default.asp), **.json** [![JSON](https://wiki.jenkins-ci.org/download/attachments/102662470/json.png)](http://www.w3schools.com/js/js_json_intro.asp))
 
-### Questions
+### Questions/Troubleshooting
 
 * Please use the <b>[Google Group](https://groups.google.com/forum/#!forum/zaproxy-jenkins)</b> for any questions about using the plugin.
+* <b>Notice</b>:
+  * Include the following:
+    * Java version
+    * Jenkins version
+    * ZAP version
+    * ZAP Jenkins Plugin version
+    * Firefox version
+  * Upload copies of the <i>zap.log</i> files and a copy of the <i>console output</i> of the jenkins log to <b>[pastebin](https://pastebin.mozilla.org/)</b>.
 
 ### Issue Tracking
 
