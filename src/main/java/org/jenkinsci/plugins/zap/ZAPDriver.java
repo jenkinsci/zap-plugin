@@ -1171,7 +1171,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                 Utils.loggerMessage(listener, 0, "[{0}] ATTACK MODE(S) INITIATED", Utils.ZAP);
                 Utils.lineBreak(listener);
                 Utils.loggerMessage(listener, 0, "[{0}] SPIDER SCAN ENABLED [ {1} ]", Utils.ZAP, String.valueOf(this.spiderScanURL).toUpperCase());
-                spiderScanURL(listener, clientApi, this.spiderScanURL, this.evaluatedTargetURL, this.contextName, this.contextId, this.userId, this.authMode, this.spiderScanRecurse, this.spiderScanSubtreeOnly, this.spiderScanMaxChildrenToCrawl);
+                spiderScanURL(listener, clientApi, this.spiderScanURL, this.evaluatedTargetURL, this.evaluatedContextName, this.contextId, this.userId, this.authMode, this.spiderScanRecurse, this.spiderScanSubtreeOnly, this.spiderScanMaxChildrenToCrawl);
                 Utils.lineBreak(listener);
                 Utils.loggerMessage(listener, 0, "[{0}] AJAX SPIDER ENABLED [ {1} ]", Utils.ZAP, String.valueOf(this.ajaxSpiderURL).toUpperCase());
                 ajaxSpiderURL(listener, clientApi, this.ajaxSpiderURL, this.evaluatedTargetURL, this.ajaxSpiderInScopeOnly);
