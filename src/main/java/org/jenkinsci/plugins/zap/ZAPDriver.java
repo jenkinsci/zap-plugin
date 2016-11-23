@@ -2345,7 +2345,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                 items.add(""); /* To not load a policy file, add a blank choice. */
 
                 for (File listFile : listFiles)
-                    items.add(FilenameUtils.getBaseName(listFile.getName())); /* Add script authentication files to the list, with their extension. */
+                    items.add(listFile.getName()); /* Add script authentication files to the list, with their extension. */
             }
             return items;
         }
@@ -2495,12 +2495,12 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         public File[] invoke(File f, VirtualChannel channel) {
             File[] listFiles = {};
 
-            Path pathAuthScriptsDir = Paths.get(zapSettingsDir, NAME_PLUGIN_DIR_ZAP);
+            Path pathPluginDir = Paths.get(zapSettingsDir, NAME_PLUGIN_DIR_ZAP);
 
-            if (Files.isDirectory(pathAuthScriptsDir)) {
-                File zapAuthScriptsDir = pathAuthScriptsDir.toFile();
+            if (Files.isDirectory(pathPluginDir)) {
+                File zapPluginDir = pathPluginDir.toFile();
                 /* Create new filename filter (get only files with FILE_PLUGIN_EXTENSION extension). */
-                FilenameFilter scriptFilter = new FilenameFilter() {
+                FilenameFilter pluginFilter = new FilenameFilter() {
 
                     @Override
                     public boolean accept(File dir, String name) {
@@ -2513,7 +2513,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                     }
                 };
                 /* Returns pathnames for files and directory. */
-                listFiles = zapAuthScriptsDir.listFiles(scriptFilter);
+                listFiles = zapPluginDir.listFiles(pluginFilter);
             }
             return listFiles;
         }
