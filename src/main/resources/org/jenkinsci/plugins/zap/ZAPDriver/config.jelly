@@ -128,6 +128,10 @@ SOFTWARE.
             <f:entry title="${%Logged in Indicator}" field="loggedInIndicator">
               <f:textbox clazz="required" />
             </f:entry>
+            <f:entry title="${%Logged out Indicator}" field="loggedOutIndicator">
+              <f:textbox clazz="required" />
+            </f:entry>
+
 
             <f:entry title="------------------------------------------------------------"></f:entry>
             <f:radioBlock title="${%Form-based Authentication}" name="authMethod" value="FORM_BASED" checked="${instance == null || instance.isAuthMethod('FORM_BASED')}" inline="true">
@@ -165,6 +169,15 @@ SOFTWARE.
       </f:optionalBlock>
     </f:entry>
   </f:section>
+
+   <f:section title="${%Context Alert Filters}">
+      <f:optionalBlock title="${%Load xml alert filter}"  field="alertFilter" inline="true">
+        <f:entry title=""></f:entry>
+          <f:entry title="${%Path}" field="xmlAlertFilters">
+            <f:textbox clazz="required" />
+   		</f:entry>
+      </f:optionalBlock>
+   </f:section>
 
   <f:section title="${%Attack Mode}">
     <f:entry title="${%Starting Point}" field="targetURL">
