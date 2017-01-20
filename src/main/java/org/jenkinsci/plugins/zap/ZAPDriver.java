@@ -22,11 +22,13 @@
  * SOFTWARE.
  */
 
-
 package org.jenkinsci.plugins.zap;
 
-import java.io.*;
 import java.io.File;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.io.Serializable;
+import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
@@ -42,8 +44,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import javax.xml.parsers.*;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.filefilter.FileFilterUtils;
@@ -58,7 +58,6 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
-
 import org.zaproxy.clientapi.core.ApiResponse;
 import org.zaproxy.clientapi.core.ApiResponseElement;
 import org.zaproxy.clientapi.core.ApiResponseList;
@@ -91,8 +90,11 @@ import hudson.tools.ToolDescriptor;
 import hudson.tools.ToolInstallation;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
-
 import jenkins.model.Jenkins;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 
 /**
  * Contains methods to start and execute ZAPDriver. Members variables are bound to the config.jelly placed to {@link "com/github/jenkinsci/zaproxyplugin/ZAPDriver/config.jelly"}
@@ -154,21 +156,20 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     private static final String EXPORT_REPORT_FORMAT_XML = "xml";
     private static final String EXPORT_REPORT_FORMAT_XHTML = "xhtml";
     private static final String EXPORT_REPORT_FORMAT_JSON = "json";
-
-
+    
     @DataBoundConstructor
     public ZAPDriver(boolean autoInstall, String toolUsed, String zapHome, String jdk, int timeout,
             String zapSettingsDir,
             boolean autoLoadSession, String loadSession, String sessionFilename, boolean removeExternalSites, String internalSites,
             String contextName, String includedURL, String excludedURL,
-            boolean authMode, String username, String password, String loggedInIndicator,String loggedOutIndicator, String authMethod,
+            boolean authMode, String username, String password, String loggedInIndicator, String loggedOutIndicator, String authMethod,
             String loginURL, String usernameParameter, String passwordParameter, String extraPostData,
             String authScript, List<ZAPAuthScriptParam> authScriptParams,
             String targetURL,
+            boolean alertFilter, String xmlAlertFilters,
             boolean spiderScanURL, boolean spiderScanRecurse, boolean spiderScanSubtreeOnly, int spiderScanMaxChildrenToCrawl,
             boolean ajaxSpiderURL, boolean ajaxSpiderInScopeOnly,
             boolean activeScanURL, boolean activeScanRecurse, String activeScanPolicy,
-            boolean alertFilter, String xmlAlertFilters,
             boolean generateReports, String selectedReportMethod, boolean deleteReports, String reportFilename,
             List<String> selectedReportFormats,
             List<String> selectedExportFormats,
@@ -339,6 +340,11 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         s += "Session Properties >> Script-Based Authentication\n";
         s += "authScript [" + authScript + "]\n";
         s += "\n";
+        s += "Session Properties >> Alerts Filters \n";
+        s += "-------------------------------------------------------\n";
+        s += "alertFilter [" + alertFilter + "]\n";
+        s += "xmlAlertFilters [" + xmlAlertFilters + "]\n";
+        s += "\n";
         s += "Attack Modes\n";
         s += "-------------------------------------------------------\n";
         s += "targetURL [" + targetURL + "]\n";
@@ -360,11 +366,6 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         s += "activeScanURL [" + activeScanURL + "]\n";
         s += "activeScanPolicy [" + activeScanPolicy + "]\n";
         s += "activeScanRecurse [" + activeScanRecurse + "]\n";
-        s += "\n";
-        s += "Manage Filters \n";
-        s += "-------------------------------------------------------\n";
-        s += "alertFilter [" + alertFilter + "]\n";
-        s += "xmlAlertFilters [" + xmlAlertFilters + "]\n";
         s += "\n";
         s += "Finalize Run\n";
         s += "-------------------------------------------------------\n";
@@ -1145,7 +1146,6 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                      * @throws ClientApiException
                      */
                     clientApi.core.loadSession(API_KEY, sessionFile.getAbsolutePath());
-
                 }
                 else {
                     /* PERSIST SESSION */
@@ -1187,10 +1187,10 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                 if (this.authMode) if (this.authMethod.equals(FORM_BASED)) this.userId = setUpAuthentication(listener, clientApi, this.contextId, this.loginURL, this.username, this.password, this.loggedInIndicator, this.loggedOutIndicator, this.extraPostData, this.authMethod, this.usernameParameter, this.passwordParameter, null, null);
                 else if (this.authMethod.equals(SCRIPT_BASED)) this.userId = setUpAuthentication(listener, clientApi, this.contextId, this.loginURL, this.username, this.password, this.loggedInIndicator, this.loggedOutIndicator, this.extraPostData, this.authMethod, null, null, this.authScript, this.authScriptParams);
 
-                /* SETUP Manage Alerts */
+                /* SETUP Alerts filter */
                 Utils.lineBreak(listener);
                 Utils.loggerMessage(listener, 0, "[{0}] ALERT(s) ENABLED", Utils.ZAP, String.valueOf(this.alertFilter).toUpperCase());
-                if(this.alertFilter)setUpContextAlertFilters(listener, clientApi, xmlAlertFilters);
+                if(this.alertFilter)setUpContextAlertFilters(listener, clientApi, this.xmlAlertFilters);
                 else Utils.loggerMessage(listener, 1, "SKIP CONTEXT ALERT(s)");
 
                 /* SETUP ATTACK MODES */
@@ -1474,10 +1474,11 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         for (String tmp : authList)
             Utils.loggerMessage(listener, 1, "{0}", tmp);
 
-        Utils.loggerMessage(listener, 1, "loggedInIndicator = {0}", loggedInIndicator , "loggedOutIndicator = {0}", loggedOutIndicator);
+        Utils.loggerMessage(listener, 1, "loggedInIndicator = {0}", loggedInIndicator, "loggedOutIndicator = {0}", loggedOutIndicator);
 
         if (!loggedInIndicator.equals("")) clientApi.authentication.setLoggedInIndicator(API_KEY, contextId, loggedInIndicator); /* Add the logged in indicator */
         if (!loggedOutIndicator.equals("")) clientApi.authentication.setLoggedOutIndicator(API_KEY, contextId, loggedOutIndicator); /* Add the logged out indicator */
+
         Utils.lineBreak(listener);
     }
 
@@ -1547,7 +1548,6 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
         if (!loggedInIndicator.equals("")) clientApi.authentication.setLoggedInIndicator(API_KEY, contextId, loggedInIndicator);  /* Add the logged in indicator */
         if (!loggedOutIndicator.equals("")) clientApi.authentication.setLoggedOutIndicator(API_KEY, contextId, loggedOutIndicator);  /* Add the logged out indicator */
-
         Utils.lineBreak(listener);
     }
 
@@ -1723,7 +1723,84 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
         return setUpUser(listener, clientApi, contextId, username, password);
     }
+    /**
+     * parse xml file and add alert filter in the context.
+     *
+     * @param listener
+     *            of type BuildListener: the display log listener during the Jenkins job execution.
+     * @param clientApi
+     *            of type ClientApi: the ZAP client API to call method.
+     * @param xmlAlertFilters
+     *            of type String: the name of the xml filter file.
+     * @throws ClientApiException
+     */
+    private void setUpContextAlertFilters(BuildListener listener,ClientApi clientApi,  String xmlAlertFilters) throws ClientApiException, IOException, SAXException, ParserConfigurationException {
 
+        Utils.loggerMessage(listener, 0, "**START : READING XML FILTER**");
+
+        Path pathAuthScriptsDir = Paths.get(zapSettingsDir, NAME_FILTERS_DIR_ZAP);
+        String pathXmlFiltersFiles = pathAuthScriptsDir + "/" + xmlAlertFilters;
+
+        Utils.loggerMessage(listener, 0, "path xml :" + pathXmlFiltersFiles);
+
+        File inputFile = new File(pathXmlFiltersFiles);
+        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+        Document doc = dBuilder.parse(inputFile);
+        doc.getDocumentElement().normalize();
+
+        NodeList nList = doc.getElementsByTagName("filter");
+
+        for (int temp = 0; temp < nList.getLength(); temp++) {
+            org.w3c.dom.Node nNode = nList.item(temp);
+            if (nNode.getNodeType() == org.w3c.dom.Node.ELEMENT_NODE) {
+
+                Element eElement = (Element) nNode;
+
+                String ruleId= eElement.getElementsByTagName("ruleId").item(0).getTextContent();
+                String newLevel= eElement.getElementsByTagName("newLevel").item(0).getTextContent();
+                String urlIsRegex= eElement.getElementsByTagName("urlIsRegex").item(0).getTextContent();
+                String enabled= eElement.getElementsByTagName("enabled").item(0).getTextContent();
+
+                NodeList instanceList = eElement.getElementsByTagName("urls");
+
+                for (int temp1 = 0; temp1 < instanceList.getLength(); temp1++) {
+
+                    org.w3c.dom.Node nNode1 = instanceList.item(temp1);
+
+                    if (nNode1.getNodeType() == org.w3c.dom.Node.ELEMENT_NODE) {
+
+                        Element eElement1 = (Element) nNode1;
+
+                        String url = eElement1.getElementsByTagName("url").item(0).getTextContent() ;
+                        String parameter = eElement1.getElementsByTagName("parameter").item(0).getTextContent();
+                        //Utils.lineBreak(listener);
+                        //Utils.loggerMessage(listener, 0, "ruleId : " + ruleId + "  newLevel : " + newLevel + "  url : " + url + "  parameter: " + parameter );
+
+                        /**
+                         * @class org.zaproxy.clientapi.gen.AlertFilter
+                         *
+                         * @method addAlertFilter
+                         *
+                         * @param String apikey
+                         * @param String contextid
+                         * @param String ruleId Cannot be null
+                         * @param String newLevel Cannot be null
+                         * @param String url Cannot be null
+                         * @param String parameter
+                         * @param String urlIsRegex
+                         * @param String enabled
+                         *
+                         * @throws ClientApiException
+                         */
+                        clientApi.alertFilter.addAlertFilter(API_KEY, contextId, ruleId, newLevel, url, urlIsRegex, parameter, enabled);
+                    }
+                }
+            }
+        }
+        Utils.lineBreak(listener);
+        Utils.loggerMessage(listener, 0, "END : READING XML FILTER");
+    }
     /**
      * Search for all links and pages on the URL and raised passives alerts.
      * 
@@ -1904,7 +1981,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                 Thread.sleep(TREAD_SLEEP);
             }
         }
-        else Utils.loggerMessage(listener, 1, "SKIP AJAX SPIDER FOR THE SITE [ {0} ]", targetURL);
+        else Utils.loggerMessage(listener, 1, "SKIP AXAJ SPIDER FOR THE SITE [ {0} ]", targetURL);
     }
 
     /**
@@ -2046,84 +2123,6 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         else Utils.loggerMessage(listener, 1, "SKIP ACTIVE SCAN FOR THE SITE [ {0} ]", targetURL);
     }
 
-    /**
-     * parse xml file and add alert filter in the context.
-     *
-     * @param listener
-     *            of type BuildListener: the display log listener during the Jenkins job execution.
-     * @param clientApi
-     *            of type ClientApi: the ZAP client API to call method.
-     * @param xmlAlertFilters
-     *            of type String: the name of the xml filter file.
-     * @throws ClientApiException
-     */
-    private void setUpContextAlertFilters(BuildListener listener,ClientApi clientApi,  String xmlAlertFilters) throws ClientApiException, IOException, SAXException, ParserConfigurationException {
-
-        Utils.loggerMessage(listener, 0, "**START : READING XML FILTER**");
-
-        Path pathAuthScriptsDir = Paths.get(zapSettingsDir, NAME_FILTERS_DIR_ZAP);
-        String pathXmlFiltersFiles = pathAuthScriptsDir + "/" + xmlAlertFilters;
-
-        Utils.loggerMessage(listener, 0, "path xml :" + pathXmlFiltersFiles);
-
-        File inputFile = new File(pathXmlFiltersFiles);
-        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-        Document doc = dBuilder.parse(inputFile);
-        doc.getDocumentElement().normalize();
-
-        NodeList nList = doc.getElementsByTagName("filter");
-
-        for (int temp = 0; temp < nList.getLength(); temp++) {
-            org.w3c.dom.Node nNode = nList.item(temp);
-            if (nNode.getNodeType() == org.w3c.dom.Node.ELEMENT_NODE) {
-
-                Element eElement = (Element) nNode;
-
-                String ruleId= eElement.getElementsByTagName("ruleId").item(0).getTextContent();
-                String newLevel= eElement.getElementsByTagName("newLevel").item(0).getTextContent();
-                String urlIsRegex= eElement.getElementsByTagName("urlIsRegex").item(0).getTextContent();
-                String enabled= eElement.getElementsByTagName("enabled").item(0).getTextContent();
-
-                NodeList instanceList = eElement.getElementsByTagName("urls");
-
-                for (int temp1 = 0; temp1 < instanceList.getLength(); temp1++) {
-
-                    org.w3c.dom.Node nNode1 = instanceList.item(temp1);
-
-                    if (nNode1.getNodeType() == org.w3c.dom.Node.ELEMENT_NODE) {
-
-                        Element eElement1 = (Element) nNode1;
-
-                        String url = eElement1.getElementsByTagName("url").item(0).getTextContent() ;
-                        String parameter = eElement1.getElementsByTagName("parameter").item(0).getTextContent();
-                        Utils.lineBreak(listener);
-                        Utils.loggerMessage(listener, 0, "ruleId : " + ruleId + "  newLevel : " + newLevel + "  url : " + url + "  parameter: " + parameter );
-
-                        /**
-                         * @class org.zaproxy.clientapi.gen.AlertFilter
-                         *
-                         * @method addAlertFilter
-                         *
-                         * @param String apikey
-                         * @param String contextid
-                         * @param String ruleId Cannot be null
-                         * @param String newLevel Cannot be null
-                         * @param String url Cannot be null
-                         * @param String parameter
-                         * @param String urlIsRegex
-                         * @param String enabled
-                         *
-                         * @throws ClientApiException
-                         */
-                        clientApi.alertFilter.addAlertFilter(API_KEY, contextId, ruleId, newLevel, url, parameter, urlIsRegex, enabled);
-                    }
-                }
-            }
-        }
-        Utils.lineBreak(listener);
-        Utils.loggerMessage(listener, 0, "END : READING XML FILTER");
-    }
     /**
      * Stop ZAP if it has been previously started.
      * 
@@ -2893,6 +2892,21 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
     public List<ZAPAuthScriptParam> getAuthScriptParams() { return authScriptParams; }
 
+    /* Manage ContectAlert filter */
+    /*****************************/
+
+    private final boolean alertFilter;
+
+    private final String xmlAlertFilters;
+
+    public boolean isAlertFilter() {
+        return alertFilter;
+    }
+
+    public String getXmlAlertFilters() {
+        return xmlAlertFilters;
+    }
+
     /* Attack Mode */
     private String targetURL; /* URL to attack by ZAP. */
 
@@ -2949,22 +2963,6 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     private final String activeScanPolicy; /* The file policy to use for the scan. It contains only the policy name (without extension). */
 
     public String getActiveScanPolicy() { return activeScanPolicy; }
-    /*****************************/
-
-    /* Attack Mode >> Active Scan */
-    /*****************************/
-
-    private final boolean alertFilter;
-
-    private final String xmlAlertFilters;
-
-    public boolean isAlertFilter() {
-        return alertFilter;
-    }
-
-    public String getXmlAlertFilters() {
-        return xmlAlertFilters;
-    }
     /*****************************/
 
     /* Finalize Run */
