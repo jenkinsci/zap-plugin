@@ -22,6 +22,7 @@ The <b>[Official OWASP ZAP Jenkins Plugin](https://wiki.jenkins-ci.org/display/J
   - Manage Sessions (Load or Persist)
   - Define Context (Name, Include URLs and Exclude URLs)
   - Attack Contexts (Spider Scan, AJAX Spider, Active Scan) 
+  - Manage Context alerts filter (Load xml file)	
 
 You can also:
   - Setup Authentication (Form Based or Script Based)
