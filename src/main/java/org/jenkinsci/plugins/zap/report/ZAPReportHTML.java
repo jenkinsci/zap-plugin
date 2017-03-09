@@ -45,5 +45,5 @@ public class ZAPReportHTML extends ZAPReport {
     public ZAPReportHTML() { this.format = ZAPReport.REPORT_FORMAT_HTML; }
 
     @Override
-    public byte[] generateReport(ClientApi clientApi, String apikey) throws ClientApiException { return clientApi.core.htmlreport(apikey); }
+    public byte[] generateReport(ClientApi clientApi, String apikey) throws ClientApiException { return clientApi.core.htmlreport(); }
 }
