@@ -132,7 +132,6 @@ SOFTWARE.
               <f:textbox clazz="required" />
             </f:entry>
 
-
             <f:entry title="------------------------------------------------------------"></f:entry>
             <f:radioBlock title="${%Form-based Authentication}" name="authMethod" value="FORM_BASED" checked="${instance == null || instance.isAuthMethod('FORM_BASED')}" inline="true">
               <f:nested>
@@ -170,14 +169,14 @@ SOFTWARE.
     </f:entry>
   </f:section>
 
-   <f:section title="${%Context Alert Filters}">
-      <f:optionalBlock title="${%Load xml alert filter}"  field="alertFilter" inline="true">
-        <f:entry title=""></f:entry>
-          <f:entry title="${%Path}" field="xmlAlertFilters">
-            <f:textbox clazz="required" />
-   		</f:entry>
-      </f:optionalBlock>
-   </f:section>
+  <f:section title="${%Context Alert Filters}">
+        <f:optionalBlock title="${%Load XML Alert Filter file}"  field="loadAlertsFilter" inline="true">
+          <f:entry title=""></f:entry>
+            <f:entry title="${%Path}" field="xmlAlertsFilter">
+              <f:textbox clazz="required" />
+     		</f:entry>
+        </f:optionalBlock>
+  </f:section>
 
   <f:section title="${%Attack Mode}">
     <f:entry title="${%Starting Point}" field="targetURL">
@@ -331,4 +330,43 @@ SOFTWARE.
       </f:entry>
     </f:optionalBlock>
   </f:section>
+  <f:section title="${%Post Build}">
+      <f:optionalBlock title="${%Define Build Management Threshold }" field="buildThresholds" inline="true">
+        <f:entry>
+          <table width="100%">
+            <tr>
+              <th></th>
+              <th>${%Threshold Value}</th>
+              <th>${%Soft Threshold }</th>
+            </tr>
+            <tr>
+              <td>High</td>
+              <td><f:textbox field="hThresholdValue"/></td>
+              <td><f:textbox field="hSoftValue"/></td>
+            </tr>
+            <tr>
+              <td>Meduim</td>
+              <td><f:textbox field="mThresholdValue"/></td>
+              <td><f:textbox field="mSoftValue"/></td>
+            </tr>
+            <tr>
+              <td>Low</td>
+              <td><f:textbox field="lThresholdValue"/></td>
+              <td><f:textbox field="lSoftValue"/></td>
+            </tr>
+            <tr>
+              <td>Info</td>
+              <td><f:textbox field="iThresholdValue"/></td>
+              <td><f:textbox field="iSoftValue"/></td>
+            </tr>
+          </table>
+          <table width="100%">
+            <tr>
+              <td>Cummulative Threshold</td>
+              <td><f:textbox field="cumulValue"/></td>
+            </tr>
+          </table>
+        </f:entry>
+      </f:optionalBlock>
+    </f:section>
 </j:jelly>
