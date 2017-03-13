@@ -33,6 +33,8 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
+import hudson.model.*;
+import hudson.model.Result;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.jenkinsci.remoting.RoleChecker;
@@ -48,11 +50,6 @@ import hudson.Launcher.LocalLauncher;
 import hudson.Launcher.RemoteLauncher;
 import hudson.Proc;
 import hudson.Util;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.BuildListener;
-import hudson.model.Computer;
-import hudson.model.Node;
 import hudson.remoting.VirtualChannel;
 import hudson.slaves.SlaveComputer;
 import hudson.tasks.BuildStepDescriptor;
@@ -69,6 +66,7 @@ import net.sf.json.JSONObject;
  * @author Thilina Madhusanka
  * @author Johann Ollivier-Lapeyre
  * @author Ludovic Roucoux
+ * @author Lenaic Tchokogoue
  * 
  */
 public class ZAPBuilder extends Builder {
@@ -286,7 +284,7 @@ public class ZAPBuilder extends Builder {
             return false;
         }
 
-        boolean res;
+        Result res;
         try {
             if (startZAPFirst){
                 Utils.lineBreak(listener);
@@ -294,6 +292,7 @@ public class ZAPBuilder extends Builder {
             }
 
             res = build.getWorkspace().act(new ZAPDriverCallable(listener, this.zaproxy));
+            build.setResult(res);
             proc.joinWithTimeout(60L, TimeUnit.MINUTES, listener);
             Utils.lineBreak(listener);
             Utils.lineBreak(listener);
@@ -338,7 +337,8 @@ public class ZAPBuilder extends Builder {
             listener.error(ExceptionUtils.getStackTrace(e));
             return false;
         }
-        return res;
+        //return res;
+        return true;
     }
 
     /**
@@ -437,7 +437,7 @@ public class ZAPBuilder extends Builder {
     /**
      * Used to execute ZAP remotely.
      */
-    private static class ZAPDriverCallable implements FileCallable<Boolean> {
+    private static class ZAPDriverCallable implements FileCallable<Result> {
 
         private static final long serialVersionUID = 1L;
         private BuildListener listener;
@@ -449,7 +449,7 @@ public class ZAPBuilder extends Builder {
         }
 
         @Override
-        public Boolean invoke(File f, VirtualChannel channel) { return zaproxy.executeZAP(listener, new FilePath(f)); }
+        public Result invoke(File f, VirtualChannel channel) { return zaproxy.executeZAP(listener, new FilePath(f)); }
 
         @Override
         public void checkRoles(RoleChecker checker) throws SecurityException { /* N/A */ }
