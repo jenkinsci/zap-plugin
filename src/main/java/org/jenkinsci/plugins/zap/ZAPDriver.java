@@ -857,10 +857,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         try {
             ArrayList<String> validFormats = new ArrayList<String>();
             ArrayList<String> apiFormats = new ArrayList<String>();
-            Map<String, String> mapView = null;
-            mapView = new HashMap<String, String>();
-            if (API_KEY != null) mapView.put("apikey", API_KEY);
-            ApiResponseList apiReponseFormats = (ApiResponseList) clientApi.callApi("exportreport", "view", "formats", mapView);
+            ApiResponseList apiReponseFormats = (ApiResponseList) clientApi.callApi("exportreport", "view", "formats", null);
             Utils.loggerMessage(listener, 1, "EXPORT REPORT FORMAT CHECK [ TRUE ]");
 
             if (apiReponseFormats.getItems().size() > 0) for (int i = 0; i < apiReponseFormats.getItems().size(); i++) {
@@ -888,7 +885,6 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                     }
                     f = new File(p.toAbsolutePath().toString(), fullFileName);
 
-                    if (API_KEY != null) map.put("apikey", API_KEY);
                     map.put("absolutePath", f.getAbsolutePath());
                     map.put("fileExtension", format);
                     map.put("sourceDetails", sourceDetails);
@@ -968,7 +964,6 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         Map<String, String> map = null;
         map = new HashMap<String, String>();
 
-        if (API_KEY != null) map.put("apikey", API_KEY);
         map.put("jiraBaseURL", jiraBaseURL);
         map.put("jiraUserName", jiraUsername);
         map.put("jiraPassword", jiraPassword);
@@ -1049,7 +1044,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
             if (delete) {
                 Utils.loggerMessage(listener, 2, "SITE: [ {0} ] [ EXTENERAL ]", apiSite.getValue());
                 try {
-                    clientApi.core.deleteSiteNode(API_KEY, apiSite.getValue(), null, null);
+                    clientApi.core.deleteSiteNode(apiSite.getValue(), null, null);
                     Utils.loggerMessage(listener, 3, "DELETED", apiSite.getValue());
                     Utils.lineBreak(listener);
                 }
@@ -1105,7 +1100,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
             Utils.lineBreak(listener);
         }
 
-        ClientApi clientApi = new ClientApi(this.evaluatedZapHost, this.evaluatedZapPort);
+        ClientApi clientApi = new ClientApi(this.evaluatedZapHost, this.evaluatedZapPort, API_KEY);
 
         try {
             if (buildSuccess) {
@@ -1124,7 +1119,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                      *
                      * @throws ClientApiException
                      */
-                    clientApi.core.loadSession(API_KEY, sessionFile.getAbsolutePath());
+                    clientApi.core.loadSession(sessionFile.getAbsolutePath());
                 }
                 else {
                     /* PERSIST SESSION */
@@ -1145,7 +1140,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                      *
                      * @throws ClientApiException
                      */
-                    clientApi.core.saveSession(API_KEY, sessionFile.getAbsolutePath(), "true");
+                    clientApi.core.saveSession(sessionFile.getAbsolutePath(), "true");
 
                     Utils.lineBreak(listener);
                     Utils.lineBreak(listener);
@@ -1313,7 +1308,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
          * 
          * @throws ClientApiException
          */
-        contextIdTemp = extractContextId(clientApi.context.newContext(API_KEY, contextName));
+        contextIdTemp = extractContextId(clientApi.context.newContext(contextName));
 
         /* INCLUDE URL(S) IN CONTEXT */
         Utils.loggerMessage(listener, 0, "[{0}] INCLUDE IN CONTEXT", Utils.ZAP);
@@ -1337,7 +1332,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                      * 
                      * @throws ClientApiException
                      */
-                    clientApi.context.includeInContext(API_KEY, contextName, contextIncludedURL);
+                    clientApi.context.includeInContext(contextName, contextIncludedURL);
                     Utils.loggerMessage(listener, 1, "[ {0} ]", contextIncludedURL);
                 }
 
@@ -1371,7 +1366,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                      * 
                      * @throws ClientApiException
                      */
-                    clientApi.context.excludeFromContext(API_KEY, contextName, contextExcludedURL);
+                    clientApi.context.excludeFromContext(contextName, contextExcludedURL);
                     Utils.loggerMessage(listener, 1, "[ {0} ]", contextExcludedURL);
                 }
 
@@ -1434,7 +1429,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
          */
         Utils.loggerMessage(listener, 0, "[{0}] FORM BASED AUTH SET AS: {1}", Utils.ZAP, formBasedConfig.toString());
         Utils.lineBreak(listener);
-        clientApi.authentication.setAuthenticationMethod(API_KEY, contextId, "formBasedAuthentication", formBasedConfig.toString());
+        clientApi.authentication.setAuthenticationMethod(contextId, "formBasedAuthentication", formBasedConfig.toString());
 
         Utils.loggerMessage(listener, 0, "[{0}] AUTH CONFIG:", Utils.ZAP);
         ApiResponseSet authData = (ApiResponseSet) clientApi.authentication.getAuthenticationMethod(contextId);
@@ -1447,7 +1442,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
         Utils.loggerMessage(listener, 1, "loggedInIndicator = {0}", loggedInIndicator);
 
-        if (!loggedInIndicator.equals("")) clientApi.authentication.setLoggedInIndicator(API_KEY, contextId, loggedInIndicator); /* Add the logged in indicator */
+        if (!loggedInIndicator.equals("")) clientApi.authentication.setLoggedInIndicator(contextId, loggedInIndicator); /* Add the logged in indicator */
         Utils.lineBreak(listener);
     }
 
@@ -1499,7 +1494,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         Utils.loggerMessage(listener, 0, "[{0}] SCRIPT BASED AUTH SET AS: {1}", Utils.ZAP, scriptBasedConfig.toString());
         Utils.lineBreak(listener);
         Utils.loggerMessage(listener, 0, "[{0}] LOAD SCRIPT FOR AUTHENTICATION", Utils.ZAP);
-        clientApi.authentication.setAuthenticationMethod(API_KEY, contextId, "scriptBasedAuthentication", scriptBasedConfig.toString());
+        clientApi.authentication.setAuthenticationMethod(contextId, "scriptBasedAuthentication", scriptBasedConfig.toString());
 
         Utils.lineBreak(listener);
         Utils.loggerMessage(listener, 0, "[{0}] AUTH CONFIG:", Utils.ZAP);
@@ -1513,7 +1508,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
         Utils.loggerMessage(listener, 1, "loggedInIndicator = {0}", loggedInIndicator);
 
-        if (!loggedInIndicator.equals("")) clientApi.authentication.setLoggedInIndicator(API_KEY, contextId, loggedInIndicator);  /* Add the logged in indicator */
+        if (!loggedInIndicator.equals("")) clientApi.authentication.setLoggedInIndicator(contextId, loggedInIndicator);  /* Add the logged in indicator */
         Utils.lineBreak(listener);
     }
 
@@ -1549,7 +1544,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
          * 
          * @throws ClientApiException
          */
-        userIdTemp = extractUserId(clientApi.users.newUser(API_KEY, contextId, username));
+        userIdTemp = extractUserId(clientApi.users.newUser(contextId, username));
 
         /* The created user has key-value pair association (Session Properties > Context > Context Name > Users), not to be confused with Authentication but it is dependent on it.
          *     form-based is hard coded in the api to lower case
@@ -1580,7 +1575,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
          * 
          * @throws ClientApiException
          */
-        clientApi.users.setAuthenticationCredentials(API_KEY, contextId, userIdTemp, userAuthConfig.toString());
+        clientApi.users.setAuthenticationCredentials(contextId, userIdTemp, userAuthConfig.toString());
 
         Utils.loggerMessage(listener, 1, "NEW USER ADDED [ SUCCESSFULLY ]", tempUsernameParam, username);
         Utils.loggerMessage(listener, 2, "{0}: {1}", tempUsernameParam, username);
@@ -1598,7 +1593,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
          * 
          * @throws ClientApiException
          */
-        clientApi.users.setUserEnabled(API_KEY, contextId, userIdTemp, "true");
+        clientApi.users.setUserEnabled(contextId, userIdTemp, "true");
         Utils.loggerMessage(listener, 1, "USER {0} IS NOW ENABLED", username);
 
         /* Forces Authenticated User during SPIDER SCAN but not AJAX SPIDER (API UNSUPPORTED). */
@@ -1633,7 +1628,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
          * 
          * @throws ClientApiException
          */
-        clientApi.forcedUser.setForcedUser(API_KEY, contextid, userid);
+        clientApi.forcedUser.setForcedUser(contextid, userid);
 
         /**
          * @class org.zaproxy.clientapi.gen.ForcedUser
@@ -1645,7 +1640,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
          * 
          * @throws ClientApiException
          */
-        clientApi.forcedUser.setForcedUserModeEnabled(API_KEY, true);
+        clientApi.forcedUser.setForcedUserModeEnabled(true);
     }
 
     /**
@@ -1743,13 +1738,13 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                  *
                  * @throws ClientApiException
                  */
-                clientApi.spider.scan(API_KEY, targetURL, String.valueOf(maxChildrenToCrawl), String.valueOf(recurse), contextName, String.valueOf(subtreeOnly));
+                clientApi.spider.scan(targetURL, String.valueOf(maxChildrenToCrawl), String.valueOf(recurse), contextName, String.valueOf(subtreeOnly));
             }
             else if (authMode) {
                 Utils.loggerMessage(listener, 2, "CONTEXT ID: [ {0} ]", contextId);
                 Utils.loggerMessage(listener, 2, "USER ID: [ {0} ]", userId);
                 ApiResponseSet userData = (ApiResponseSet) clientApi.users.getUserById(contextId, userId);
-                String name = userData.getAttribute("name");
+                String name = userData.getStringValue("name");
                 Utils.loggerMessage(listener, 2, "USER NAME: [ {0} ]", name);
                 Utils.lineBreak(listener);
                 Utils.loggerMessage(listener, 0, "[{0}] SPIDER SCAN THE SITE [ {1} ] AS USER [ {2} ]", Utils.ZAP, targetURL, name);
@@ -1769,7 +1764,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                  *
                  * @throws ClientApiException
                  */
-                clientApi.spider.scanAsUser(API_KEY, contextId, userId, targetURL, String.valueOf(maxChildrenToCrawl), String.valueOf(recurse), String.valueOf(subtreeOnly));
+                clientApi.spider.scanAsUser(contextId, userId, targetURL, String.valueOf(maxChildrenToCrawl), String.valueOf(recurse), String.valueOf(subtreeOnly));
             }
 
             /**
@@ -1839,7 +1834,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
              *
              * @throws ClientApiException
              */
-            clientApi.ajaxSpider.scan(API_KEY, targetURL, String.valueOf(inScopeOnly));
+            clientApi.ajaxSpider.scan(targetURL, String.valueOf(inScopeOnly), null, null);
 
             /**
              * Wait for completed AJAX SPIDER (not equal to 'running')
@@ -1928,13 +1923,13 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                  *
                  * @default values: true, false, default policy, GET, nothing
                  */
-                clientApi.ascan.scan(API_KEY, targetURL, String.valueOf(recurse), "false", policy, null, null);
+                clientApi.ascan.scan(targetURL, String.valueOf(recurse), "false", policy, null, null);
             }
             else if (authMode) {
                 Utils.loggerMessage(listener, 2, "CONTEXT ID: [ {0} ]", contextId);
                 Utils.loggerMessage(listener, 2, "USER ID: [ {0} ]", userId);
                 ApiResponseSet userData = (ApiResponseSet) clientApi.users.getUserById(contextId, userId);
-                String name = userData.getAttribute("name");
+                String name = userData.getStringValue("name");
                 Utils.loggerMessage(listener, 2, "USER NAME: [ {0} ]", name);
                 Utils.lineBreak(listener);
                 Utils.loggerMessage(listener, 0, "[{0}] ACTIVE SCAN THE SITE [ {1} ] AS USER [ {2} ]", Utils.ZAP, targetURL, name);
@@ -1956,7 +1951,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                  *
                  * @throws ClientApiException
                  */
-                clientApi.ascan.scanAsUser(API_KEY, targetURL, contextId, userId, String.valueOf(recurse), policy, null, null);
+                clientApi.ascan.scanAsUser(targetURL, contextId, userId, String.valueOf(recurse), policy, null, null);
             }
 
             /**
@@ -2033,7 +2028,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
              *
              * @throws ClientApiException
              */
-            clientApi.core.shutdown(API_KEY);
+            clientApi.core.shutdown();
         }
         else Utils.loggerMessage(listener, 0, "[{0}] SHUTDOWN [ ERROR ]", Utils.ZAP);
     }

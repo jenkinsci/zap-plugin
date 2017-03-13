@@ -45,5 +45,5 @@ public class ZAPReportXML extends ZAPReport {
     public ZAPReportXML() { this.format = ZAPReport.REPORT_FORMAT_XML; }
 
     @Override
-    public byte[] generateReport(ClientApi clientApi, String apikey) throws ClientApiException { return clientApi.core.xmlreport(apikey); }
+    public byte[] generateReport(ClientApi clientApi, String apikey) throws ClientApiException { return clientApi.core.xmlreport(); }
 }
