@@ -2189,7 +2189,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     private Result ManageThreshold(BuildListener listener,FilePath workspace,ClientApi clientApi, int hThresholdValue, int hSoftValue, int mThresholdValue, int  mSoftValue, int lThresholdValue, int lSoftValue, int iThresholdValue, int iSoftValue, int cumulValue) throws ClientApiException, IOException {
 
         Utils.lineBreak(listener);
-        Utils.loggerMessage(listener, 0, "***** Post Build step, looking if we are under Threshold... ***");
+        Utils.loggerMessage(listener, 0, "START : COMPUTE THRESHOLD", Utils.ZAP);
         Result buildStatus = Result.SUCCESS;
 
         Utils.lineBreak(listener);
@@ -2219,6 +2219,8 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         if(((hThresholdValue*nbAlertHigh)+(mThresholdValue*nbAlertMeduim)+(lThresholdValue*nbAlertLow)+(iThresholdValue*nbAlertInfo))> cumulValue){
             buildStatus = Result.UNSTABLE;
         }
+
+        Utils.loggerMessage(listener, 0, "END : COMPUTING THRESHOLD", Utils.ZAP);
 
         return  buildStatus;
 
