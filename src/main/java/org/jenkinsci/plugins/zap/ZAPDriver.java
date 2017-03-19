@@ -2315,7 +2315,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         }
 
         /**
-         * List model to choose the authentication script file to use by ZAProxy scan. It's called on the remote machine (if present) to load all authentication script files in the ZAP default dir of the build's machine. The jenkins job must be started once in order to create the workspace, so this method can load the list of authentication scripts the authentication scripts must be stored in this directory : <zapSettingsDir>/scripts/authentication
+         * List model to choose the authentication script file to use by ZAProxy scan. It's called on the remote machine (if present) to load all authentication script files in the ZAP default dir of the build's machine. The jenkins job must be started once in order to create the workspace, so this method can load the list of authentication scripts the authentication scripts must be stored in this directory : <zapSettingsDir>/scripts/scripts/authentication
          *
          * @param zapSettingsDir
          *            of type @QueryParameter String: A string that represents an absolute path to the directory that ZAP uses.
@@ -2447,7 +2447,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         public File[] invoke(File f, VirtualChannel channel) {
             File[] listFiles = {};
 
-            Path pathAuthScriptsDir = Paths.get(zapSettingsDir, NAME_SCRIPTS_DIR_ZAP, NAME_AUTH_SCRIPTS_DIR_ZAP);
+            Path pathAuthScriptsDir = Paths.get(zapSettingsDir, NAME_SCRIPTS_DIR_ZAP, NAME_SCRIPTS_DIR_ZAP, NAME_AUTH_SCRIPTS_DIR_ZAP);
 
             if (Files.isDirectory(pathAuthScriptsDir)) {
                 File zapAuthScriptsDir = pathAuthScriptsDir.toFile();
