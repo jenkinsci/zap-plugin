@@ -43,6 +43,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -64,6 +67,12 @@ import org.zaproxy.clientapi.core.ClientApiException;
 import org.jenkinsci.plugins.zap.report.ZAPReport;
 import org.jenkinsci.plugins.zap.report.ZAPReportCollection;
 
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+
+import org.xml.sax.SAXException;
+
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
@@ -79,6 +88,7 @@ import hudson.model.Descriptor;
 import hudson.model.EnvironmentSpecific;
 import hudson.model.JDK;
 import hudson.model.Node;
+import hudson.model.Result;
 import hudson.remoting.VirtualChannel;
 import hudson.slaves.NodeSpecific;
 import hudson.slaves.SlaveComputer;
@@ -91,6 +101,7 @@ import jenkins.model.Jenkins;
 /**
  * Contains methods to start and execute ZAPDriver. Members variables are bound to the config.jelly placed to {@link "com/github/jenkinsci/zaproxyplugin/ZAPDriver/config.jelly"}
  *
+ * @author Lenaic Tchokogoue
  * @author Goran Sarenkapa
  * @author Mostafa AbdelMoez
  * @author Tanguy de Lignières
@@ -109,12 +120,14 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
     /* Folder names and file extensions */
     private static final String FILE_POLICY_EXTENSION = ".policy";
+    private static final String FILE_ALERTS_FILTER_EXTENSION = ".alertfilter";
     private static final String FILE_SESSION_EXTENSION = ".session";
     private static final String FILE_AUTH_SCRIPTS_JS_EXTENSION = ".js";
     private static final String FILE_AUTH_SCRIPTS_ZEST_EXTENSION = ".zst";
     private static final String FILE_PLUGIN_EXTENSION = ".zap";
     private static final String NAME_PLUGIN_DIR_ZAP = "plugin";
     static final String NAME_POLICIES_DIR_ZAP = "policies";
+    static final String NAME_ALERT_FILTERS_DIR_ZAP = "alertfilters";
     private static final String NAME_SCRIPTS_DIR_ZAP = "scripts";
     private static final String NAME_AUTH_SCRIPTS_DIR_ZAP = "authentication";
     private static final String NAME_REPORT_DIR = "reports";
@@ -153,13 +166,15 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
             String zapSettingsDir,
             boolean autoLoadSession, String loadSession, String sessionFilename, boolean removeExternalSites, String internalSites,
             String contextName, String includedURL, String excludedURL,
-            boolean authMode, String username, String password, String loggedInIndicator, String authMethod,
+            boolean authMode, String username, String password, String loggedInIndicator, String loggedOutIndicator, String authMethod,
             String loginURL, String usernameParameter, String passwordParameter, String extraPostData,
             String authScript, List<ZAPAuthScriptParam> authScriptParams,
             String targetURL,
+            boolean loadAlertsFilter, String xmlAlertsFilter,
             boolean spiderScanURL, boolean spiderScanRecurse, boolean spiderScanSubtreeOnly, int spiderScanMaxChildrenToCrawl,
             boolean ajaxSpiderURL, boolean ajaxSpiderInScopeOnly,
             boolean activeScanURL, boolean activeScanRecurse, String activeScanPolicy,
+            boolean buildThresholds, int hThresholdValue, int hSoftValue, int mThresholdValue, int  mSoftValue, int lThresholdValue, int lSoftValue, int iThresholdValue, int iSoftValue, int cumulValue,
             boolean generateReports, String selectedReportMethod, boolean deleteReports, String reportFilename,
             List<String> selectedReportFormats,
             List<String> selectedExportFormats,
@@ -196,6 +211,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         this.username = username;
         this.password = password;
         this.loggedInIndicator = loggedInIndicator;
+        this.loggedOutIndicator = loggedOutIndicator;
         this.authMethod = authMethod;
 
         /* Session Properties >> Form-Based Authentication */
@@ -207,6 +223,10 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         /* Session Properties >> Script-Based Authentication */
         this.authScript = authScript;
         this.authScriptParams = authScriptParams != null ? new ArrayList<ZAPAuthScriptParam>(authScriptParams) : new ArrayList<ZAPAuthScriptParam>();
+
+        /* Context Alerts Filters*/
+        this.loadAlertsFilter = loadAlertsFilter;
+        this.xmlAlertsFilter = xmlAlertsFilter;
 
         /* Attack Mode */
         this.targetURL = targetURL;
@@ -268,6 +288,19 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         this.jiraAlertMedium = jiraAlertMedium;
         this.jiraAlertLow = jiraAlertLow;
         this.jiraFilterIssuesByResourceType = jiraFilterIssuesByResourceType;
+
+        /* Post Build Step*/
+        this.buildThresholds=buildThresholds;
+        this.hThresholdValue= hThresholdValue;
+        this.hSoftValue = hSoftValue;
+        this.mThresholdValue = mThresholdValue;
+        this.mSoftValue = mSoftValue;
+        this.lThresholdValue = lThresholdValue;
+        this.lSoftValue = lSoftValue;
+        this.iThresholdValue = iThresholdValue;
+        this.iSoftValue = iSoftValue;
+        this.cumulValue = cumulValue;
+
         /* Other */
         this.cmdLinesZAP = cmdLinesZAP != null ? new ArrayList<ZAPCmdLine>(cmdLinesZAP) : new ArrayList<ZAPCmdLine>();
 
@@ -315,6 +348,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         s += "authMode [" + authMode + "]\n";
         s += "username [" + username + "]\n";
         s += "loggedInIndicator [" + loggedInIndicator + "]\n";
+        s += "loggedOutIndicator [" + loggedOutIndicator + "]\n";
         s += "authMethod [" + authMethod + "]\n";
         s += "Session Properties >> Form-Based Authentication\n";
         s += "loginURL [" + loginURL + "]\n";
@@ -323,6 +357,11 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         s += "extraPostData [" + extraPostData + "]\n";
         s += "Session Properties >> Script-Based Authentication\n";
         s += "authScript [" + authScript + "]\n";
+        s += "\n";
+        s += "Session Properties >> Context Alerts Filters \n";
+        s += "-------------------------------------------------------\n";
+        s += "loadAlertsFilter [" + loadAlertsFilter + "]\n";
+        s += "xmlAlertsFilter [" + xmlAlertsFilter + "]\n";
         s += "\n";
         s += "Attack Modes\n";
         s += "-------------------------------------------------------\n";
@@ -391,6 +430,19 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         s += "jiraAlertMedium [" + jiraAlertMedium + "]\n";
         s += "jiraAlertLow [" + jiraAlertLow + "]\n";
         s += "jiraFilterIssuesByResourceType[" + jiraFilterIssuesByResourceType + "]\n";
+        s += "\n";
+        s += " Post build \n";
+        s += "-------------------------------------------------------\n";
+        s += "buildThresholds [" + buildThresholds + "]\n";
+        s += "hThresholdValue [" + hThresholdValue + "]\n";
+        s += "hSoftValue [" + hSoftValue + "]\n";
+        s += "mThresholdValue [" + mThresholdValue + "]\n";
+        s += "mSoftValue [" + mSoftValue + "]\n";
+        s += "lThresholdValue [" + lThresholdValue + "]\n";
+        s += "lSoftValue [" + lSoftValue + "]\n";
+        s += "iThresholdValue [" + iThresholdValue + "]\n";
+        s += "iSoftValue [" + iSoftValue + "]\n";
+        s += "cumulValue [" + cumulValue + "]\n";
         return s;
     }
 
@@ -538,6 +590,13 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         this.evaluatedTargetURL = envVars.expand(this.evaluatedTargetURL);
         if (this.evaluatedTargetURL == null || this.evaluatedTargetURL.isEmpty()) throw new IllegalArgumentException("STARTING POINT (URL) IS MISSING, PROVIDED [ " + this.evaluatedTargetURL + " ]");
         else Utils.loggerMessage(listener, 1, "(EXP) STARTING POINT (URL) = [ {0} ]", this.evaluatedTargetURL);
+
+        if (this.loadAlertsFilter) {
+            Utils.loggerMessage(listener, 1, "(EXP) ALERT FILTERS = [ {0} ]", Boolean.toString(this.loadAlertsFilter));
+            if (this.xmlAlertsFilter == null || this.xmlAlertsFilter.isEmpty())
+                throw new IllegalArgumentException("ALERT FILTERS FILE IS MISSING, PROVIDED [ " + this.xmlAlertsFilter + " ]");
+            else Utils.loggerMessage(listener, 1, "(EXP) ALERT FILTERS FILE = [ {0} ]", this.xmlAlertsFilter);
+        } else Utils.loggerMessage(listener, 1, "(EXP) ALERT FILTERS = [ {0} ]", Boolean.toString(this.loadAlertsFilter));
 
         if (this.generateReports) {
             this.evaluatedReportFilename = envVars.expand(this.evaluatedReportFilename);
@@ -1068,8 +1127,9 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      *            of type FilePath: a {@link FilePath} representing the build's workspace.
      * @return of type: boolean DESC: true if no exception is caught, false otherwise.
      */
-    public boolean executeZAP(BuildListener listener, FilePath workspace) {
+    public Result executeZAP(BuildListener listener, FilePath workspace) {
         boolean buildSuccess = true;
+        Result buildStatus=Result.SUCCESS;
 
         /* Check to make sure that plugin's are installed with ZAP if they are selected in the UI. */
         if (((this.generateReports) && this.selectedReportMethod.equals(EXPORT_REPORT)) || (this.jiraCreate)) {
@@ -1095,6 +1155,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                 if (count == 0) {
                     Utils.loggerMessage(listener, 1, "REQUIRED PLUGIN(S) ARE MISSING");
                     buildSuccess = false;
+                    buildStatus = Result.ABORTED;
                 }
             }
             Utils.lineBreak(listener);
@@ -1145,6 +1206,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                     Utils.lineBreak(listener);
                     Utils.lineBreak(listener);
                     buildSuccess = deleteExternalSites(listener, clientApi, this.removeExternalSites, this.evaluatedInternalSites, buildSuccess);
+                    if (!buildSuccess){buildStatus=Result.ABORTED;}
                 }
                 Utils.lineBreak(listener);
             }
@@ -1158,8 +1220,14 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                 Utils.loggerMessage(listener, 0, "[{0}] AUTHENTICATION MODE [ {1} ]", Utils.ZAP, this.authMethod.toUpperCase());
                 Utils.lineBreak(listener);
                 /* SETUP AUTHENICATION */
-                if (this.authMode) if (this.authMethod.equals(FORM_BASED)) this.userId = setUpAuthentication(listener, clientApi, this.contextId, this.loginURL, this.username, this.password, this.loggedInIndicator, this.extraPostData, this.authMethod, this.usernameParameter, this.passwordParameter, null, null);
-                else if (this.authMethod.equals(SCRIPT_BASED)) this.userId = setUpAuthentication(listener, clientApi, this.contextId, this.loginURL, this.username, this.password, this.loggedInIndicator, this.extraPostData, this.authMethod, null, null, this.authScript, this.authScriptParams);
+                if (this.authMode) if (this.authMethod.equals(FORM_BASED)) this.userId = setUpAuthentication(listener, clientApi, this.contextId, this.loginURL, this.username, this.password, this.loggedInIndicator, this.loggedOutIndicator, this.extraPostData, this.authMethod, this.usernameParameter, this.passwordParameter, null, null);
+                else if (this.authMethod.equals(SCRIPT_BASED)) this.userId = setUpAuthentication(listener, clientApi, this.contextId, this.loginURL, this.username, this.password, this.loggedInIndicator, this.loggedOutIndicator, this.extraPostData, this.authMethod, null, null, this.authScript, this.authScriptParams);
+
+                /* SETUP Alerts filter */
+                Utils.lineBreak(listener);
+                Utils.loggerMessage(listener, 0, "[{0}] CONTEXT ALERT(s) FILTER ENABLED", Utils.ZAP, String.valueOf(this.loadAlertsFilter).toUpperCase());
+                if(this.loadAlertsFilter)setUpContextAlertFilters(listener, clientApi, this.xmlAlertsFilter);
+                else Utils.loggerMessage(listener, 1, "SKIP CONTEXT ALERT(s)");
 
                 /* SETUP ATTACK MODES */
                 Utils.lineBreak(listener);
@@ -1194,6 +1262,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                     String alertDetails = returnBooleanCheckedStatus(this.exportreportCWEID) + ";" + returnBooleanCheckedStatus(this.exportreportWASCID) + ";" + returnBooleanCheckedStatus(this.exportreportDescription) + ";" + returnBooleanCheckedStatus(this.exportreportOtherInfo) + ";" + returnBooleanCheckedStatus(this.exportreportSolution) + ";" + returnBooleanCheckedStatus(this.exportreportReference) + ";" + returnBooleanCheckedStatus(this.exportreportRequestHeader) + ";"
                             + returnBooleanCheckedStatus(this.exportreportResponseHeader) + ";" + returnBooleanCheckedStatus(this.exportreportRequestBody) + ";" + returnBooleanCheckedStatus(this.exportreportResponseBody) + ";";
                     buildSuccess = exportReport(listener, clientApi, workspace, this.selectedExportFormats, this.evaluatedReportFilename, sourceDetails, alertSeverity, alertDetails, buildSuccess);
+                    if (!buildSuccess){buildStatus=Result.ABORTED;}
                 }
                 else Utils.loggerMessage(listener, 1, "SKIP GENERATE REPORT(S)");
 
@@ -1209,11 +1278,18 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                 Utils.loggerMessage(listener, 1, "ALERTS COUNT [ {1} ]", Utils.ZAP, numberOfAlerts);
                 String numberOfMessages = ((ApiResponseElement) clientApi.core.numberOfMessages("")).getValue();
                 Utils.loggerMessage(listener, 1, "MESSAGES COUNT [ {1} ]", Utils.ZAP, numberOfMessages);
+
+                /* POST BUILD STEP */
+                Utils.lineBreak(listener);
+                Utils.loggerMessage(listener, 0, "[{0}] MANAGE THRESHOLD(s) ENABLED", Utils.ZAP, String.valueOf(this.buildThresholds).toUpperCase());
+                if(this.buildThresholds) buildStatus = ManageThreshold(listener,clientApi, hThresholdValue, hSoftValue, mThresholdValue, mSoftValue, lThresholdValue, lSoftValue, iThresholdValue, iSoftValue, cumulValue);
+                else Utils.loggerMessage(listener, 1, "SKIP POST BUILD STEP --> Manage Threshold(s)");
             }
         }
         catch (Exception e) {
             listener.error(ExceptionUtils.getStackTrace(e));
             buildSuccess = false;
+            buildStatus = Result.ABORTED;
         }
         finally {
             try {
@@ -1222,10 +1298,11 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
             catch (ClientApiException e) {
                 listener.error(ExceptionUtils.getStackTrace(e));
                 buildSuccess = false;
+                buildStatus = Result.ABORTED;
             }
         }
         Utils.lineBreak(listener);
-        return buildSuccess;
+        return buildStatus;
     }
 
     /**
@@ -1392,6 +1469,8 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      *            of type String: loging page URL.
      * @param loggedInIndicator
      *            of type String: indicator to signify that a user is logged in.
+     * @param loggedOutIndicator
+     *            of type String: indicator to signify that a user is logged out.
      * @param extraPostData
      *            of type String: other post data (other than credentials).
      * @param usernameParameter
@@ -1401,7 +1480,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      * @throws ClientApiException
      * @throws UnsupportedEncodingException
      */
-    private void setUpFormBasedAuth(BuildListener listener, ClientApi clientApi, String contextId, String loginURL, String loggedInIndicator, String extraPostData, String usernameParameter, String passwordParameter) throws ClientApiException, UnsupportedEncodingException {
+    private void setUpFormBasedAuth(BuildListener listener, ClientApi clientApi, String contextId, String loginURL, String loggedInIndicator, String loggedOutIndicator, String extraPostData, String usernameParameter, String passwordParameter) throws ClientApiException, UnsupportedEncodingException {
 
         String loginRequestData = usernameParameter + "={%username%}&" + passwordParameter + "={%password%}";
         if (extraPostData.length() > 0) loginRequestData = loginRequestData + "&" + extraPostData;
@@ -1441,8 +1520,10 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
             Utils.loggerMessage(listener, 1, "{0}", tmp);
 
         Utils.loggerMessage(listener, 1, "loggedInIndicator = {0}", loggedInIndicator);
-
         if (!loggedInIndicator.equals("")) clientApi.authentication.setLoggedInIndicator(contextId, loggedInIndicator); /* Add the logged in indicator */
+        Utils.loggerMessage(listener, 1, "loggedOutIndicator = {0}", loggedOutIndicator);
+        if (!loggedOutIndicator.equals("")) clientApi.authentication.setLoggedOutIndicator(contextId, loggedOutIndicator); /* Add the logged out indicator */
+
         Utils.lineBreak(listener);
     }
 
@@ -1461,6 +1542,8 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      *            of type String: loging page URL.
      * @param loggedInIndicator
      *            of type String: indicator to signify that a user is logged in.
+     * @param loggedOutIndicator
+     *            of type String: indicator to signify that a user is logged out.
      * @param extraPostData
      *            of type String: other post data (other than credentials).
      * @param scriptName
@@ -1468,7 +1551,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      * @throws UnsupportedEncodingException
      * @throws ClientApiException
      */
-    private void setUpScriptBasedAuth(BuildListener listener, ClientApi clientApi, ArrayList<ZAPAuthScriptParam> authScriptParams, String contextId, String loginURL, String loggedInIndicator, String extraPostData, String scriptName) throws UnsupportedEncodingException, ClientApiException {
+    private void setUpScriptBasedAuth(BuildListener listener, ClientApi clientApi, ArrayList<ZAPAuthScriptParam> authScriptParams, String contextId, String loginURL, String loggedInIndicator, String loggedOutIndicator, String extraPostData, String scriptName) throws UnsupportedEncodingException, ClientApiException {
 
         /* Prepare the configuration in a format similar to how URL parameters are formed. This means that any value we add for the configuration values has to be URL encoded. */
         StringBuilder scriptBasedConfig = new StringBuilder();
@@ -1507,8 +1590,10 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
             Utils.loggerMessage(listener, 1, "{0}", tmp);
 
         Utils.loggerMessage(listener, 1, "loggedInIndicator = {0}", loggedInIndicator);
-
         if (!loggedInIndicator.equals("")) clientApi.authentication.setLoggedInIndicator(contextId, loggedInIndicator);  /* Add the logged in indicator */
+        Utils.loggerMessage(listener, 1, "loggedOutIndicator = {0}", loggedOutIndicator);
+        if (!loggedOutIndicator.equals(""))clientApi.authentication.setLoggedOutIndicator(contextId, loggedOutIndicator);  /* Add the logged out indicator */
+
         Utils.lineBreak(listener);
     }
 
@@ -1616,7 +1701,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      * @throws ClientApiException
      * @throws UnsupportedEncodingException
      */
-    private void setUpForcedUser(BuildListener listener, ClientApi clientApi, String contextid, String userid) throws ClientApiException, UnsupportedEncodingException {
+    private void setUpForcedUser(BuildListener listener, ClientApi clientApi, String contextId, String userid) throws ClientApiException, UnsupportedEncodingException {
         /**
          * @class org.zaproxy.clientapi.gen.ForcedUser
          * 
@@ -1628,7 +1713,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
          * 
          * @throws ClientApiException
          */
-        clientApi.forcedUser.setForcedUser(contextid, userid);
+        clientApi.forcedUser.setForcedUser(contextId, userid);
 
         /**
          * @class org.zaproxy.clientapi.gen.ForcedUser
@@ -1660,6 +1745,8 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      *            of type String: password for the authentication user.
      * @param loggedInIndicator
      *            of type String: indicator to signify that a user is logged in.
+     * @param loggedOutIndicator
+     *            of type String: indicator to signify that a user is logged Out.
      * @param extraPostData
      *            of type String: other post data (other than credentials).
      * @param authMethod
@@ -1676,11 +1763,85 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      * @throws ClientApiException
      * @throws UnsupportedEncodingException
      */
-    private String setUpAuthentication(BuildListener listener, ClientApi clientApi, String contextId, String loginURL, String username, String password, String loggedInIndicator, String extraPostData, String authMethod, String usernameParameter, String passwordParameter, String scriptName, ArrayList<ZAPAuthScriptParam> authScriptParams) throws ClientApiException, UnsupportedEncodingException {
-        if (authMethod.equals(FORM_BASED)) setUpFormBasedAuth(listener, clientApi, contextId, loginURL, loggedInIndicator, extraPostData, usernameParameter, passwordParameter);
-        else if (authMethod.equals(SCRIPT_BASED)) setUpScriptBasedAuth(listener, clientApi, authScriptParams, contextId, loginURL, loggedInIndicator, extraPostData, scriptName);
+    private String setUpAuthentication(BuildListener listener, ClientApi clientApi, String contextId, String loginURL, String username, String password, String loggedInIndicator, String loggedOutIndicator, String extraPostData, String authMethod, String usernameParameter, String passwordParameter, String scriptName, ArrayList<ZAPAuthScriptParam> authScriptParams) throws ClientApiException, UnsupportedEncodingException {
+        if (authMethod.equals(FORM_BASED)) setUpFormBasedAuth(listener, clientApi, contextId, loginURL, loggedInIndicator, loggedOutIndicator, extraPostData, usernameParameter, passwordParameter);
+        else if (authMethod.equals(SCRIPT_BASED)) setUpScriptBasedAuth(listener, clientApi, authScriptParams, contextId, loginURL, loggedInIndicator,  loggedOutIndicator, extraPostData, scriptName);
 
         return setUpUser(listener, clientApi, contextId, username, password);
+    }
+
+    /**
+     * parse xml file and add alert filter in the context.
+     *
+     * @param listener
+     *            of type BuildListener: the display log listener during the Jenkins job execution.
+     * @param clientApi
+     *            of type ClientApi: the ZAP client API to call method.
+     * @param xmlAlertsFilter
+     *            of type String: the name of the xml filter file.
+     * @throws ClientApiException
+     */
+    private void setUpContextAlertFilters(BuildListener listener,ClientApi clientApi,  String xmlAlertsFilter) throws ClientApiException, IOException, SAXException, ParserConfigurationException {
+        Utils.lineBreak(listener);
+        Utils.loggerMessage(listener, 0, "START : PARSING XML ALERT(s) FILTER File");
+
+        Path pathAlertFiltersDir  = Paths.get(zapSettingsDir, NAME_ALERT_FILTERS_DIR_ZAP);
+        String pathXmlFiltersFiles = pathAlertFiltersDir + "/" + xmlAlertsFilter;
+
+        File inputFile = new File(pathXmlFiltersFiles);
+        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+        Document doc = dBuilder.parse(inputFile);
+        doc.getDocumentElement().normalize();
+
+        NodeList nList = doc.getElementsByTagName("filter");
+
+        for (int temp = 0; temp < nList.getLength(); temp++) {
+            org.w3c.dom.Node nNode = nList.item(temp);
+            if (nNode.getNodeType() == org.w3c.dom.Node.ELEMENT_NODE) {
+
+                Element eElement = (Element) nNode;
+                String ruleId= eElement.getElementsByTagName("ruleId").item(0).getTextContent();
+                String newLevel= eElement.getElementsByTagName("newLevel").item(0).getTextContent();
+                String urlIsRegex= eElement.getElementsByTagName("urlIsRegex").item(0).getTextContent();
+                String enabled= eElement.getElementsByTagName("enabled").item(0).getTextContent();
+
+                NodeList instanceList = eElement.getElementsByTagName("uri");
+
+                for (int temp1 = 0; temp1 < instanceList.getLength(); temp1++) {
+
+                    org.w3c.dom.Node nNode1 = instanceList.item(temp1);
+
+                    if (nNode1.getNodeType() == org.w3c.dom.Node.ELEMENT_NODE) {
+
+                        Element eElement1 = (Element) nNode1;
+
+                        String url = eElement1.getElementsByTagName("url").item(0).getTextContent() ;
+                        String parameter = eElement1.getElementsByTagName("parameter").item(0).getTextContent();
+                    
+                        /**
+                         * @class org.zaproxy.clientapi.gen.AlertFilter
+                         *
+                         * @method addAlertFilter
+                         *
+                         * @param String contextid
+                         * @param String ruleId Cannot be null
+                         * @param String newLevel Cannot be null
+                         * @param String url Cannot be null
+                         * @param String parameter
+                         * @param String urlIsRegex
+                         * @param String enabled
+                         *
+                         * @throws ClientApiException
+                         */
+
+                        clientApi.alertFilter.addAlertFilter(contextId, ruleId, newLevel, url, urlIsRegex, parameter, enabled);
+                    }
+                }
+            }
+        }
+        Utils.lineBreak(listener);
+        Utils.loggerMessage(listener, 0, "END : READING XML FILTER");
     }
 
     /**
@@ -1698,7 +1859,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      *            of type String: the name of the context. 
      * @param contextId
      *            of type String: ID of the created context.
-     * @param userid
+     * @param userId
      *            of type String: ID of the created user.
      * @param authMode
      *            of type boolean: if the scan is authenticated (true) or unauthenticated (false).
@@ -1879,7 +2040,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      *            of type String: the starting URL to investigate.
      * @param contextId
      *            of type String: ID of the created context.
-     * @param userid
+     * @param userId
      *            of type String: ID of the created user.
      * @param authMode
      *            of type boolean: if the scan is authenticated (true) or unauthenticated (false).
@@ -2004,6 +2165,82 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         }
         else Utils.loggerMessage(listener, 1, "SKIP ACTIVE SCAN FOR THE SITE [ {0} ]", targetURL);
     }
+
+    /**
+     * ManageThreshold define build value failed, pass , unstable.
+     *
+     * @param listener
+     *            of type BuildListener: the display log listener during the Jenkins job execution.
+     * @param clientApi
+     *            of type ClientApi: the ZAP client API to call method.
+     * @param hThresholdValue
+     *            of type int: the Weight of the alert severity high.
+     * @param hSoftValue
+     *            of type int: the threshold of the alert severity high.
+     * @param mThresholdValue
+     *            of type int: the Weight of the alert severity meduim.
+     * @param mSoftValue
+     *            of type int: the threshold of the alert severity meduim.
+     * @param lThresholdValue
+     *            of type int: the Weight of the alert severity low.
+     * @param lSoftValue
+     *            of type int: the threshold of the alert severity low.
+     * @param iThresholdValue
+     *             of type int: the Weight of the alert severity informational.
+     * @param iSoftValue
+     *            of type int: the threshold of the alert severity informational.
+     * @param cumulValue
+     *            of type int: the cumulative threshold of the alerts.
+     *
+     */
+
+    private Result ManageThreshold(BuildListener listener,ClientApi clientApi, int hThresholdValue, int hSoftValue, int mThresholdValue, int  mSoftValue, int lThresholdValue, int lSoftValue, int iThresholdValue, int iSoftValue, int cumulValue) throws ClientApiException, IOException {
+
+        Utils.lineBreak(listener);
+        Utils.loggerMessage(listener, 0, "START : COMPUTE THRESHOLD", Utils.ZAP);
+        Result buildStatus = Result.SUCCESS;
+
+        Utils.lineBreak(listener);
+        int nbAlertHigh = 0;
+        int nbAlertMedium = 0;
+        int nbAlertLow = 0;
+        int nbAlertInfo = 0;
+        int count = 0;
+        List<String> tempid = new ArrayList<String>();
+        tempid.add("begin");
+
+        List allAlerts1 = ((ApiResponseList) clientApi.core.alerts("","","")).getItems();
+        for(int i=0;i<allAlerts1.size();i++) {
+            ApiResponseSet temp = ((ApiResponseSet) allAlerts1.get(i));
+
+            if (!tempid.contains(temp.getValue("alert").toString())) {
+                if ("High".equals(temp.getValue("risk").toString())) {nbAlertHigh++;}
+                if ("Medium".equals(temp.getValue("risk").toString())) {nbAlertMedium++;}
+                if ("Low".equals(temp.getValue("risk").toString())) {nbAlertLow++;}
+                if ("Informational".equals(temp.getValue("risk").toString())) { nbAlertInfo++;}
+            }
+            tempid.add(temp.getValue("alert").toString());
+        }
+
+        Utils.loggerMessage(listener, 1, "ALERTS High COUNT [ {1} ]", Utils.ZAP, Integer.toString(nbAlertHigh));
+        Utils.loggerMessage(listener, 1, "ALERTS Medium COUNT [ {1} ]", Utils.ZAP, Integer.toString(nbAlertMedium));
+        Utils.loggerMessage(listener, 1, "ALERTS Low COUNT [ {1} ]", Utils.ZAP, Integer.toString(nbAlertLow));
+        Utils.loggerMessage(listener, 1, "ALERTS Informational COUNT [ {1} ]", Utils.ZAP, Integer.toString(nbAlertInfo));
+
+
+        if(((hThresholdValue*nbAlertHigh) > hSoftValue) || ((mThresholdValue*nbAlertMedium) > mSoftValue) || ((lThresholdValue*nbAlertLow) > lSoftValue )
+                || ((iThresholdValue*nbAlertInfo) > iSoftValue)){count++;}
+        if(((hThresholdValue*nbAlertHigh)+(mThresholdValue*nbAlertMedium)+(lThresholdValue*nbAlertLow)+(iThresholdValue*nbAlertInfo))> cumulValue){count++;}
+
+        if(count==1){buildStatus = Result.UNSTABLE;}
+        if(count==2){buildStatus = Result.FAILURE;}
+
+        Utils.loggerMessage(listener, 0, "END : COMPUTING THRESHOLD", Utils.ZAP);
+
+        return  buildStatus;
+
+    }
+
 
     /**
      * Stop ZAP if it has been previously started.
@@ -2284,6 +2521,36 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         }
 
         /**
+         * List model to choose the xml alert filter file to add in the context.
+         *
+         * @param zapSettingsDir
+         *            of type @QueryParameter String: A string that represents an absolute path to the directory that ZAP uses.
+         * @return a {@link ListBoxModel}. It can be empty if zapSettingsDir doesn't contain any policy file.
+         */
+        public ListBoxModel doFillXmlAlertsFilterItems(@QueryParameter String zapSettingsDir) {
+            ListBoxModel items = new ListBoxModel();
+
+            /* No workspace before the first build, so workspace is null. */
+            if (workspace != null) {
+                File[] listFiles = {};
+                try {
+                    listFiles = workspace.act(new xmlAlertsFilterCallable(zapSettingsDir));
+                }
+                catch (IOException e) {
+                    e.printStackTrace(); /* No listener because it's not during a build but it's on the job config page. */
+                }
+                catch (InterruptedException e) {
+                    e.printStackTrace(); /* No listener because it's not during a build but it's on the job config page. */
+                }
+
+                items.add(""); /* To not load a policy file, add a blank choice. */
+
+                for (File listFile : listFiles)
+                    items.add(listFile.getName()); /* Add xml files to the list, with their extension. */
+            }
+            return items;
+        }
+        /**
          * List model to choose the policy file to use by ZAProxy scan. It's called on the remote machine (if present) to load all policy files in the ZAP default dir of the build's machine.
          *
          * @param zapSettingsDir
@@ -2390,6 +2657,48 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         }
     }
 
+       /**
+     * This class allows to search all ZAP xml alert filter files in the ZAP default dir of the remote machine (or local machine if there is no remote machine).
+     */
+    private static class xmlAlertsFilterCallable implements FileCallable<File[]> {
+
+        private static final long serialVersionUID = 1L;
+
+        private String zapSettingsDir;
+
+        public xmlAlertsFilterCallable(String zapSettingsDir) { this.zapSettingsDir = zapSettingsDir; }
+
+        @Override
+        public File[] invoke(File f, VirtualChannel channel) {
+            File[] listFiles = {};
+
+            Path pathXmlFiltersFiles = Paths.get(zapSettingsDir,NAME_ALERT_FILTERS_DIR_ZAP);
+
+            if (Files.isDirectory(pathXmlFiltersFiles)) {
+                File zapXmlFiltersDir = pathXmlFiltersFiles.toFile();
+                /* Create new filename filter (get only files with XML extension ). */
+                FilenameFilter scriptFilter = new FilenameFilter() {
+
+                    @Override
+                    public boolean accept(File dir, String name) {
+                        if (name.lastIndexOf('.') > 0) {
+                            int lastIndex = name.lastIndexOf('.'); /* Get last index for '.' char. */
+                            String str = name.substring(lastIndex); /* Get the extension. */
+                            if (str.equals(FILE_ALERTS_FILTER_EXTENSION)) return true; /* Match path name extension. */
+                        }
+                        return false;
+                    }
+                };
+                /* Returns pathnames for files and directory. */
+                listFiles = zapXmlFiltersDir.listFiles(scriptFilter);
+            }
+            return listFiles;
+        }
+
+        @Override
+        public void checkRoles(RoleChecker checker) throws SecurityException { /* N/A */ }
+    }
+    
     /**
      * This class allows to search all ZAP policy files in the ZAP default dir of the remote machine (or local machine if there is no remote machine). It's used in the plugin configuration page to fill the list of policy files and choose one of them.
      */
@@ -2738,7 +3047,11 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
     private final String loggedInIndicator; /* Logged in indication. */
 
+    private final String loggedOutIndicator; /* Logged out indication. */
+
     public String getLoggedInIndicator() { return loggedInIndicator; }
+
+    public String getLoggedOutIndicator() { return loggedOutIndicator; }
 
     private final String authMethod; /* the authentication method type (FORM_BASED or SCRIPT_BASED). */
 
@@ -2769,6 +3082,17 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     private final ArrayList<ZAPAuthScriptParam> authScriptParams; /* List of all Authentication Script Parameters ArrayList because it needs to be Serializable (whereas List is not Serializable). */
 
     public List<ZAPAuthScriptParam> getAuthScriptParams() { return authScriptParams; }
+
+   /* Manage Context Alert Filter */
+    /*****************************/
+
+    private final boolean loadAlertsFilter;
+
+    private final String xmlAlertsFilter;
+
+    public boolean getLoadAlertsFilter() {return loadAlertsFilter;}
+
+    public String getXMLAlertsFilter() {return xmlAlertsFilter;}
 
     /* Attack Mode */
     private String targetURL; /* URL to attack by ZAP. */
@@ -3002,5 +3326,37 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     private final boolean jiraFilterIssuesByResourceType; /* Filter issues by resource type. */
 
     public boolean getFiraFilterIssuesByResourceType() { return jiraFilterIssuesByResourceType; }
+
+    /* Post Build Step >> Manage Threshold */
+
+    private final boolean buildThresholds;
+    public boolean isbuildThresholds() {return buildThresholds;}
+
+    private final int hThresholdValue;
+    public int gethThresholdValue() {return hThresholdValue;}
+
+    private final int hSoftValue;
+    public int gethSoftValue() {return hSoftValue;}
+
+    private final int mThresholdValue;
+    public int getmThresholdValue() {return mThresholdValue;}
+
+    private final int mSoftValue;
+    public int getmSoftValue() {return mSoftValue;}
+
+    private final int lThresholdValue;
+    public int getlThresholdValue() {return lThresholdValue;}
+
+    private final int lSoftValue;
+    public int getlSoftValue() {return lSoftValue;}
+
+    private final int iThresholdValue;
+    public int getiThresholdValue() {return iThresholdValue;}
+
+    private final int iSoftValue;
+    public int getiSoftValue() {return iSoftValue;}
+
+    private final int cumulValue;
+    public int getcumulValue() {return cumulValue;}
     /*****************************/
 }

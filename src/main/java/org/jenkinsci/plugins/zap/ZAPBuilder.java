@@ -53,6 +53,7 @@ import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
 import hudson.model.Computer;
 import hudson.model.Node;
+import hudson.model.Result;
 import hudson.remoting.VirtualChannel;
 import hudson.slaves.SlaveComputer;
 import hudson.tasks.BuildStepDescriptor;
@@ -62,6 +63,7 @@ import net.sf.json.JSONObject;
 /**
  * The main class of the plugin. This class adds a build step in a Jenkins job that allows you to launch the ZAP security tool and generate reports based on the alerts.
  * 
+ * @author Lenaic Tchokogoue
  * @author Goran Sarenkapa
  * @author Mostafa AbdelMoez
  * @author Tanguy de Lignières
@@ -286,7 +288,7 @@ public class ZAPBuilder extends Builder {
             return false;
         }
 
-        boolean res;
+        Result res;
         try {
             if (startZAPFirst){
                 Utils.lineBreak(listener);
@@ -294,6 +296,7 @@ public class ZAPBuilder extends Builder {
             }
 
             res = build.getWorkspace().act(new ZAPDriverCallable(listener, this.zaproxy));
+            build.setResult(res);
             proc.joinWithTimeout(60L, TimeUnit.MINUTES, listener);
             Utils.lineBreak(listener);
             Utils.lineBreak(listener);
@@ -338,7 +341,7 @@ public class ZAPBuilder extends Builder {
             listener.error(ExceptionUtils.getStackTrace(e));
             return false;
         }
-        return res;
+        return res.completeBuild;
     }
 
     /**
@@ -437,7 +440,7 @@ public class ZAPBuilder extends Builder {
     /**
      * Used to execute ZAP remotely.
      */
-    private static class ZAPDriverCallable implements FileCallable<Boolean> {
+    private static class ZAPDriverCallable implements FileCallable<Result> {
 
         private static final long serialVersionUID = 1L;
         private BuildListener listener;
@@ -449,7 +452,7 @@ public class ZAPBuilder extends Builder {
         }
 
         @Override
-        public Boolean invoke(File f, VirtualChannel channel) { return zaproxy.executeZAP(listener, new FilePath(f)); }
+        public Result invoke(File f, VirtualChannel channel) { return zaproxy.executeZAP(listener, new FilePath(f)); }
 
         @Override
         public void checkRoles(RoleChecker checker) throws SecurityException { /* N/A */ }
