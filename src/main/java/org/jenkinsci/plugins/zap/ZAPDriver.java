@@ -1225,9 +1225,8 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
                 /* SETUP Alerts filter */
                 Utils.lineBreak(listener);
-                Utils.loggerMessage(listener, 0, "[{0}] CONTEXT ALERT(s) FILTER ENABLED", Utils.ZAP, String.valueOf(this.loadAlertsFilter).toUpperCase());
-                if(this.loadAlertsFilter)setUpContextAlertFilters(listener, clientApi, this.xmlAlertsFilter);
-                else Utils.loggerMessage(listener, 1, "SKIP CONTEXT ALERT(s)");
+                Utils.loggerMessage(listener, 0, "[{0}] CONTEXT ALERT FILTER(S) ENABLED [ {1} ]", Utils.ZAP, String.valueOf(this.loadAlertsFilter).toUpperCase());
+                if (this.loadAlertsFilter) setUpContextAlertFilters(listener, clientApi, this.xmlAlertsFilter);
 
                 /* SETUP ATTACK MODES */
                 Utils.lineBreak(listener);
@@ -1281,9 +1280,8 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
                 /* POST BUILD STEP */
                 Utils.lineBreak(listener);
-                Utils.loggerMessage(listener, 0, "[{0}] MANAGE THRESHOLD(s) ENABLED", Utils.ZAP, String.valueOf(this.buildThresholds).toUpperCase());
-                if(this.buildThresholds) buildStatus = ManageThreshold(listener,clientApi, hThresholdValue, hSoftValue, mThresholdValue, mSoftValue, lThresholdValue, lSoftValue, iThresholdValue, iSoftValue, cumulValue);
-                else Utils.loggerMessage(listener, 1, "SKIP POST BUILD STEP --> Manage Threshold(s)");
+                Utils.loggerMessage(listener, 0, "[{0}] MANAGE POST-BUILD THRESHOLD(S) ENABLED [ {1} ]", Utils.ZAP, String.valueOf(this.buildThresholds).toUpperCase());
+                if(this.buildThresholds) buildStatus = ManageThreshold(listener, clientApi, this.hThresholdValue, this.hSoftValue, this.mThresholdValue, this.mSoftValue, this.lThresholdValue, this.lSoftValue, this.iThresholdValue, this.iSoftValue, this.cumulValue);
             }
         }
         catch (Exception e) {
@@ -1783,7 +1781,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      */
     private void setUpContextAlertFilters(BuildListener listener,ClientApi clientApi,  String xmlAlertsFilter) throws ClientApiException, IOException, SAXException, ParserConfigurationException {
         Utils.lineBreak(listener);
-        Utils.loggerMessage(listener, 0, "START : PARSING XML ALERT(s) FILTER File");
+        Utils.loggerMessage(listener, 0, "START : PARSING XML ALERT FILTER(S) FILE");
 
         Path pathAlertFiltersDir  = Paths.get(zapSettingsDir, NAME_ALERT_FILTERS_DIR_ZAP);
         String pathXmlFiltersFiles = pathAlertFiltersDir + "/" + xmlAlertsFilter;
