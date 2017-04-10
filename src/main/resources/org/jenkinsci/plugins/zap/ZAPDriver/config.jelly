@@ -114,6 +114,10 @@ SOFTWARE.
       <f:textarea />
     </f:entry>
 
+    <f:entry title="${%Alert Filters}" field="alertFilters">
+      <f:select />
+    </f:entry>
+
     <f:entry>
       <f:optionalBlock title="${%Authentication}" field="authMode" inline="true">
         <f:entry>
@@ -164,12 +168,6 @@ SOFTWARE.
             </f:radioBlock>
             <f:entry title="------------------------------------------------------------"></f:entry>
           </table>
-        </f:entry>
-      </f:optionalBlock>
-
-      <f:optionalBlock title="${%Alert Filters}" field="loadAlertsFilter" inline="true">
-        <f:entry title="${%XML Alert Filter file }" field="xmlAlertsFilter">
-          <f:select />
         </f:entry>
       </f:optionalBlock>
     </f:entry>
