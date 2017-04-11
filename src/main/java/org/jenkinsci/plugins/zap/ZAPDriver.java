@@ -153,7 +153,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
             String zapSettingsDir,
             boolean autoLoadSession, String loadSession, String sessionFilename, boolean removeExternalSites, String internalSites,
             String contextName, String includedURL, String excludedURL,
-            boolean authMode, String username, String password, String loggedInIndicator, String authMethod,
+            boolean authMode, String username, String password, String loggedInIndicator, String loggedOutIndicator, String authMethod,
             String loginURL, String usernameParameter, String passwordParameter, String extraPostData,
             String authScript, List<ZAPAuthScriptParam> authScriptParams,
             String targetURL,
@@ -196,6 +196,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         this.username = username;
         this.password = password;
         this.loggedInIndicator = loggedInIndicator;
+        this.loggedOutIndicator = loggedOutIndicator;
         this.authMethod = authMethod;
 
         /* Session Properties >> Form-Based Authentication */
@@ -315,6 +316,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         s += "authMode [" + authMode + "]\n";
         s += "username [" + username + "]\n";
         s += "loggedInIndicator [" + loggedInIndicator + "]\n";
+        s += "loggedOutIndicator [" + loggedOutIndicator + "]\n";
         s += "authMethod [" + authMethod + "]\n";
         s += "Session Properties >> Form-Based Authentication\n";
         s += "loginURL [" + loginURL + "]\n";
@@ -1158,8 +1160,8 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                 Utils.loggerMessage(listener, 0, "[{0}] AUTHENTICATION MODE [ {1} ]", Utils.ZAP, this.authMethod.toUpperCase());
                 Utils.lineBreak(listener);
                 /* SETUP AUTHENICATION */
-                if (this.authMode) if (this.authMethod.equals(FORM_BASED)) this.userId = setUpAuthentication(listener, clientApi, this.contextId, this.loginURL, this.username, this.password, this.loggedInIndicator, this.extraPostData, this.authMethod, this.usernameParameter, this.passwordParameter, null, null);
-                else if (this.authMethod.equals(SCRIPT_BASED)) this.userId = setUpAuthentication(listener, clientApi, this.contextId, this.loginURL, this.username, this.password, this.loggedInIndicator, this.extraPostData, this.authMethod, null, null, this.authScript, this.authScriptParams);
+                if (this.authMode) if (this.authMethod.equals(FORM_BASED)) this.userId = setUpAuthentication(listener, clientApi, this.contextId, this.loginURL, this.username, this.password, this.loggedInIndicator, this.loggedOutIndicator, this.extraPostData, this.authMethod, this.usernameParameter, this.passwordParameter, null, null);
+                else if (this.authMethod.equals(SCRIPT_BASED)) this.userId = setUpAuthentication(listener, clientApi, this.contextId, this.loginURL, this.username, this.password, this.loggedInIndicator, this.loggedOutIndicator, this.extraPostData, this.authMethod, null, null, this.authScript, this.authScriptParams);
 
                 /* SETUP ATTACK MODES */
                 Utils.lineBreak(listener);
@@ -1392,6 +1394,8 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      *            of type String: loging page URL.
      * @param loggedInIndicator
      *            of type String: indicator to signify that a user is logged in.
+     * @param loggedOutIndicator
+     *            of type String: indicator to signify that a user is logged out.
      * @param extraPostData
      *            of type String: other post data (other than credentials).
      * @param usernameParameter
@@ -1401,7 +1405,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      * @throws ClientApiException
      * @throws UnsupportedEncodingException
      */
-    private void setUpFormBasedAuth(BuildListener listener, ClientApi clientApi, String contextId, String loginURL, String loggedInIndicator, String extraPostData, String usernameParameter, String passwordParameter) throws ClientApiException, UnsupportedEncodingException {
+    private void setUpFormBasedAuth(BuildListener listener, ClientApi clientApi, String contextId, String loginURL, String loggedInIndicator, String loggedOutIndicator, String extraPostData, String usernameParameter, String passwordParameter) throws ClientApiException, UnsupportedEncodingException {
 
         String loginRequestData = usernameParameter + "={%username%}&" + passwordParameter + "={%password%}";
         if (extraPostData.length() > 0) loginRequestData = loginRequestData + "&" + extraPostData;
@@ -1441,8 +1445,11 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
             Utils.loggerMessage(listener, 1, "{0}", tmp);
 
         Utils.loggerMessage(listener, 1, "loggedInIndicator = {0}", loggedInIndicator);
-
         if (!loggedInIndicator.equals("")) clientApi.authentication.setLoggedInIndicator(contextId, loggedInIndicator); /* Add the logged in indicator */
+
+        Utils.loggerMessage(listener, 1, "loggedOutIndicator = {0}", loggedOutIndicator);
+        if (!loggedOutIndicator.equals("")) clientApi.authentication.setLoggedOutIndicator(contextId, loggedOutIndicator); /* Add the logged out indicator */
+
         Utils.lineBreak(listener);
     }
 
@@ -1461,6 +1468,8 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      *            of type String: loging page URL.
      * @param loggedInIndicator
      *            of type String: indicator to signify that a user is logged in.
+     * @param loggedOutIndicator
+     *            of type String: indicator to signify that a user is logged out.
      * @param extraPostData
      *            of type String: other post data (other than credentials).
      * @param scriptName
@@ -1468,7 +1477,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      * @throws UnsupportedEncodingException
      * @throws ClientApiException
      */
-    private void setUpScriptBasedAuth(BuildListener listener, ClientApi clientApi, ArrayList<ZAPAuthScriptParam> authScriptParams, String contextId, String loginURL, String loggedInIndicator, String extraPostData, String scriptName) throws UnsupportedEncodingException, ClientApiException {
+    private void setUpScriptBasedAuth(BuildListener listener, ClientApi clientApi, ArrayList<ZAPAuthScriptParam> authScriptParams, String contextId, String loginURL, String loggedInIndicator, String loggedOutIndicator, String extraPostData, String scriptName) throws UnsupportedEncodingException, ClientApiException {
 
         /* Prepare the configuration in a format similar to how URL parameters are formed. This means that any value we add for the configuration values has to be URL encoded. */
         StringBuilder scriptBasedConfig = new StringBuilder();
@@ -1507,8 +1516,11 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
             Utils.loggerMessage(listener, 1, "{0}", tmp);
 
         Utils.loggerMessage(listener, 1, "loggedInIndicator = {0}", loggedInIndicator);
-
         if (!loggedInIndicator.equals("")) clientApi.authentication.setLoggedInIndicator(contextId, loggedInIndicator);  /* Add the logged in indicator */
+
+        Utils.loggerMessage(listener, 1, "loggedOutIndicator = {0}", loggedOutIndicator);
+        if (!loggedOutIndicator.equals(""))clientApi.authentication.setLoggedOutIndicator(contextId, loggedOutIndicator);  /* Add the logged out indicator */
+
         Utils.lineBreak(listener);
     }
 
@@ -1660,6 +1672,8 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      *            of type String: password for the authentication user.
      * @param loggedInIndicator
      *            of type String: indicator to signify that a user is logged in.
+     * @param loggedOutIndicator
+     *            of type String: indicator to signify that a user is logged Out.
      * @param extraPostData
      *            of type String: other post data (other than credentials).
      * @param authMethod
@@ -1676,9 +1690,9 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      * @throws ClientApiException
      * @throws UnsupportedEncodingException
      */
-    private String setUpAuthentication(BuildListener listener, ClientApi clientApi, String contextId, String loginURL, String username, String password, String loggedInIndicator, String extraPostData, String authMethod, String usernameParameter, String passwordParameter, String scriptName, ArrayList<ZAPAuthScriptParam> authScriptParams) throws ClientApiException, UnsupportedEncodingException {
-        if (authMethod.equals(FORM_BASED)) setUpFormBasedAuth(listener, clientApi, contextId, loginURL, loggedInIndicator, extraPostData, usernameParameter, passwordParameter);
-        else if (authMethod.equals(SCRIPT_BASED)) setUpScriptBasedAuth(listener, clientApi, authScriptParams, contextId, loginURL, loggedInIndicator, extraPostData, scriptName);
+    private String setUpAuthentication(BuildListener listener, ClientApi clientApi, String contextId, String loginURL, String username, String password, String loggedInIndicator, String loggedOutIndicator, String extraPostData, String authMethod, String usernameParameter, String passwordParameter, String scriptName, ArrayList<ZAPAuthScriptParam> authScriptParams) throws ClientApiException, UnsupportedEncodingException {
+        if (authMethod.equals(FORM_BASED)) setUpFormBasedAuth(listener, clientApi, contextId, loginURL, loggedInIndicator, loggedOutIndicator, extraPostData, usernameParameter, passwordParameter);
+        else if (authMethod.equals(SCRIPT_BASED)) setUpScriptBasedAuth(listener, clientApi, authScriptParams, contextId, loginURL, loggedInIndicator, loggedOutIndicator, extraPostData, scriptName);
 
         return setUpUser(listener, clientApi, contextId, username, password);
     }
@@ -2739,6 +2753,10 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     private final String loggedInIndicator; /* Logged in indication. */
 
     public String getLoggedInIndicator() { return loggedInIndicator; }
+
+    private final String loggedOutIndicator; /* Logged out indication. */
+
+    public String getLoggedOutIndicator() { return loggedOutIndicator; }
 
     private final String authMethod; /* the authentication method type (FORM_BASED or SCRIPT_BASED). */
 
