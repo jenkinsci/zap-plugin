@@ -39,6 +39,8 @@ You can also:
     * ZAP Jenkins Plugin version
     * Firefox version
   * Upload copies of the <i>zap.log</i> files and a copy of the <i>console output</i> of the jenkins log to <b>[pastebin](https://pastebin.mozilla.org/)</b>.
+  * Jenkins is always running on a master, is ZAP running on the master as well or on a separate slave machine?
+  * Relevant Jenkins Job Configurations sanitized screenshots.
 
 ### Issue Tracking
 
@@ -50,6 +52,15 @@ You can also:
 
 * If you find any security vulnerabilities or exploits caused by the plugin, please send a private email to one of the <b>[maintainer(s)](https://wiki.jenkins-ci.org/display/JENKINS/zap+plugin#zapplugin-PluginInformation)</b>.
 * <b>Notice</b>: These should be kept private until a fix is issued.
+
+### Version History
+
+<dl>
+  <dt>Latest Release - Version 1.0.8 (Mar 19, 2017)</dt>
+  <dd><img src="https://wiki.jenkins-ci.org/images/icons/emoticons/warning.gif" alt="warning"> Changed the default authentication script directory for the plugin to match the directory for ZAP (GUI) and updated resource files accordingly. See updated documentation for <b><a href="https://wiki.jenkins-ci.org/display/JENKINS/zap-plugin+Script-Based+Auth">Script-Based Auth</a></b>.</dd>
+</dl>
+
+See <b>[Full Version History](https://wiki.jenkins-ci.org/display/JENKINS/zap-plugin+History)</b>
 
 ### License
 
