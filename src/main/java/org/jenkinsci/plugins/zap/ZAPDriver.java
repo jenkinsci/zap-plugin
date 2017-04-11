@@ -44,6 +44,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.filefilter.FileFilterUtils;
@@ -51,18 +55,21 @@ import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.lang.NullArgumentException;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.tools.ant.BuildException;
+import org.jenkinsci.plugins.zap.report.ZAPReport;
+import org.jenkinsci.plugins.zap.report.ZAPReportCollection;
 import org.jenkinsci.remoting.RoleChecker;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 import org.zaproxy.clientapi.core.ApiResponse;
 import org.zaproxy.clientapi.core.ApiResponseElement;
 import org.zaproxy.clientapi.core.ApiResponseList;
 import org.zaproxy.clientapi.core.ApiResponseSet;
 import org.zaproxy.clientapi.core.ClientApi;
 import org.zaproxy.clientapi.core.ClientApiException;
-
-import org.jenkinsci.plugins.zap.report.ZAPReport;
-import org.jenkinsci.plugins.zap.report.ZAPReportCollection;
 
 import hudson.EnvVars;
 import hudson.Extension;
@@ -91,6 +98,7 @@ import jenkins.model.Jenkins;
 /**
  * Contains methods to start and execute ZAPDriver. Members variables are bound to the config.jelly placed to {@link "com/github/jenkinsci/zaproxyplugin/ZAPDriver/config.jelly"}
  *
+ * @author Lenaic Tchokogoue
  * @author Goran Sarenkapa
  * @author Mostafa AbdelMoez
  * @author Tanguy de Lignières
@@ -109,12 +117,14 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
     /* Folder names and file extensions */
     private static final String FILE_POLICY_EXTENSION = ".policy";
+    private static final String FILE_ALERTS_FILTER_EXTENSION = ".alertfilter";
     private static final String FILE_SESSION_EXTENSION = ".session";
     private static final String FILE_AUTH_SCRIPTS_JS_EXTENSION = ".js";
     private static final String FILE_AUTH_SCRIPTS_ZEST_EXTENSION = ".zst";
     private static final String FILE_PLUGIN_EXTENSION = ".zap";
     private static final String NAME_PLUGIN_DIR_ZAP = "plugin";
     static final String NAME_POLICIES_DIR_ZAP = "policies";
+    static final String NAME_ALERT_FILTERS_DIR_ZAP = "alertfilters";
     private static final String NAME_SCRIPTS_DIR_ZAP = "scripts";
     private static final String NAME_AUTH_SCRIPTS_DIR_ZAP = "authentication";
     private static final String NAME_REPORT_DIR = "reports";
@@ -153,6 +163,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
             String zapSettingsDir,
             boolean autoLoadSession, String loadSession, String sessionFilename, boolean removeExternalSites, String internalSites,
             String contextName, String includedURL, String excludedURL,
+            String alertFilters,
             boolean authMode, String username, String password, String loggedInIndicator, String loggedOutIndicator, String authMethod,
             String loginURL, String usernameParameter, String passwordParameter, String extraPostData,
             String authScript, List<ZAPAuthScriptParam> authScriptParams,
@@ -190,6 +201,9 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         this.contextName = contextName;
         this.includedURL = includedURL;
         this.excludedURL = excludedURL;
+
+        /* Session Properties >> Alert Filters */
+        this.alertFilters = alertFilters;
 
         /* Session Properties >> Authentication */
         this.authMode = authMode;
@@ -310,6 +324,10 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         s += "contextName [" + contextName + "]\n";
         s += "includedURL [" + includedURL + "]\n";
         s += "excludedURL [" + excludedURL + "]\n";
+        s += "\n";
+        s += "Session Properties >> Alert Filters\n";
+        s += "-------------------------------------------------------\n";
+        s += "alertFilters [" + alertFilters + "]\n";
         s += "\n";
         s += "Session Properties >> Authentication\n";
         s += "-------------------------------------------------------\n";
@@ -1155,6 +1173,10 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                 /* SETUP CONTEXT */
                 this.contextId = setUpContext(listener, clientApi, this.evaluatedContextName, this.evaluatedIncludedURL, this.evaluatedExcludedURL);
 
+                /* SETUP ALERT FILTERS */
+                Utils.lineBreak(listener);
+                setUpAlertFilters(listener, clientApi, this.alertFilters);
+
                 Utils.lineBreak(listener);
                 Utils.loggerMessage(listener, 0, "[{0}] AUTHENTICATION ENABLED [ {1} ]", Utils.ZAP, String.valueOf(this.authMode).toUpperCase());
                 Utils.loggerMessage(listener, 0, "[{0}] AUTHENTICATION MODE [ {1} ]", Utils.ZAP, this.authMethod.toUpperCase());
@@ -1696,6 +1718,72 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
         return setUpUser(listener, clientApi, contextId, username, password);
     }
+
+    /**
+     * parse xml file and add alert filter in the context.
+     *
+     * @param listener
+     *            of type BuildListener: the display log listener during the Jenkins job execution.
+     * @param clientApi
+     *            of type ClientApi: the ZAP client API to call method.
+     * @param alertFilters
+     *            of type String: the name of the xml filter file.
+     * @throws ClientApiException
+     */
+    private void setUpAlertFilters(BuildListener listener,ClientApi clientApi,  String alertFilters) throws ClientApiException, IOException, SAXException, ParserConfigurationException {
+        if (alertFilters == null || alertFilters.isEmpty()) Utils.loggerMessage(listener, 0, "[{0}] ALERT FILTERS: [ None ]", Utils.ZAP);
+        else
+        {
+            Path pathAlertFiltersDir  = Paths.get(zapSettingsDir, NAME_ALERT_FILTERS_DIR_ZAP, alertFilters.concat(FILE_ALERTS_FILTER_EXTENSION)); // Will throw NPE if alertFilters is null.
+            Utils.loggerMessage(listener, 0, "[{0}] ALERT FILTERS: [ {1} ]", Utils.ZAP, pathAlertFiltersDir.toString());
+            File alertFiltersFile = pathAlertFiltersDir.toFile();
+
+            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+            Document doc = dBuilder.parse(alertFiltersFile);
+            doc.getDocumentElement().normalize();
+
+            NodeList alertfilterList = doc.getElementsByTagName("alertfilter");
+
+            for (int i = 1; i <= alertfilterList.getLength(); i++) {
+                org.w3c.dom.Node alertfilterNode = alertfilterList.item(i - 1);
+                if (alertfilterNode.getNodeType() == org.w3c.dom.Node.ELEMENT_NODE) {
+                    Element alertfilterElement = (Element) alertfilterNode;
+                    String ruleId= alertfilterElement.getElementsByTagName("ruleId").item(0).getTextContent();
+                    String newLevel= alertfilterElement.getElementsByTagName("newLevel").item(0).getTextContent();
+                    String url= alertfilterElement.getElementsByTagName("url").item(0).getTextContent();
+                    String urlIsRegex= alertfilterElement.getElementsByTagName("urlIsRegex").item(0).getTextContent();
+                    String parameter= alertfilterElement.getElementsByTagName("parameter").item(0).getTextContent();
+                    String enabled= alertfilterElement.getElementsByTagName("enabled").item(0).getTextContent();
+                    /*
+                     * @class org.zaproxy.clientapi.gen.AlertFilter
+                     *
+                     * @method addAlertFilter
+                     *
+                     * @param String contextId
+                     * @param String ruleId Cannot be null
+                     * @param String newLevel Cannot be null
+                     * @param String url Cannot be null
+                     * @param String parameter
+                     * @param String urlIsRegex Null implies false
+                     * @param String enabled Null implies false
+                     *
+                     * @throws ClientApiException
+                     */
+                    Utils.lineBreak(listener);
+                    Utils.loggerMessage(listener, 1, "ALERT FILTER: #{0}", String.valueOf(i));
+                    Utils.loggerMessage(listener, 2, "RULE ID = [ {0} ]", ruleId);
+                    Utils.loggerMessage(listener, 2, "NEW LEVEL = [ {0} ]", newLevel);
+                    Utils.loggerMessage(listener, 2, "URL = [ {0} ]", url);
+                    Utils.loggerMessage(listener, 2, "URL IS REGEX = [ {0} ]", urlIsRegex.toUpperCase());
+                    Utils.loggerMessage(listener, 2, "PARAMETER = [ {0} ]", parameter);
+                    Utils.loggerMessage(listener, 2, "ENABLED = [ {0} ]", enabled.toUpperCase());
+                    clientApi.alertFilter.addAlertFilter(contextId, ruleId, newLevel, url, urlIsRegex, parameter, enabled);
+                }
+            }
+        }
+    }
+
 
     /**
      * Search for all links and pages on the URL and raised passives alerts.
@@ -2298,6 +2386,37 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         }
 
         /**
+         * List model to choose the alert filters file to use by ZAProxy scan. It's called on the remote machine (if present) to load all alert filters in the ZAP default dir of the build's machine.
+         *
+         * @param zapSettingsDir
+         *            of type @QueryParameter String: A string that represents an absolute path to the directory that ZAP uses.
+         * @return a {@link ListBoxModel}. It can be empty if zapSettingsDir doesn't contain any policy file.
+         */
+        public ListBoxModel doFillAlertFiltersItems(@QueryParameter String zapSettingsDir) {
+            ListBoxModel items = new ListBoxModel();
+
+            /* No workspace before the first build, so workspace is null. */
+            if (workspace != null) {
+                File[] listFiles = {};
+                try {
+                    listFiles = workspace.act(new AlertFiltersCallable(zapSettingsDir));
+                }
+                catch (IOException e) {
+                    e.printStackTrace(); /* No listener because it's not during a build but it's on the job config page. */
+                }
+                catch (InterruptedException e) {
+                    e.printStackTrace(); /* No listener because it's not during a build but it's on the job config page. */
+                }
+
+                items.add(""); /* To not load a policy file, add a blank choice. */
+
+                for (File listFile : listFiles)
+                    items.add(FilenameUtils.getBaseName(listFile.getName())); /* Add alert filters files to the list, without their extension. */
+            }
+            return items;
+        }
+
+        /**
          * List model to choose the policy file to use by ZAProxy scan. It's called on the remote machine (if present) to load all policy files in the ZAP default dir of the build's machine.
          *
          * @param zapSettingsDir
@@ -2402,6 +2521,48 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
             return items;
         }
+    }
+
+    /**
+     * This class allows to search all ZAP xml alert filter files in the ZAP default dir of the remote machine (or local machine if there is no remote machine).
+     */
+    private static class AlertFiltersCallable implements FileCallable<File[]> {
+
+        private static final long serialVersionUID = 1L;
+
+        private String zapSettingsDir;
+
+        public AlertFiltersCallable(String zapSettingsDir) { this.zapSettingsDir = zapSettingsDir; }
+
+        @Override
+        public File[] invoke(File f, VirtualChannel channel) {
+            File[] listFiles = {};
+
+            Path pathAlertFiltersDir = Paths.get(zapSettingsDir, NAME_ALERT_FILTERS_DIR_ZAP);
+
+            if (Files.isDirectory(pathAlertFiltersDir)) {
+                File alertFiltersFile = pathAlertFiltersDir.toFile();
+                /* Create new filename filter (get only file with FILE_ALERTS_FILTER_EXTENSION extension). */
+                FilenameFilter filter = new FilenameFilter() {
+
+                    @Override
+                    public boolean accept(File dir, String name) {
+                        if (name.lastIndexOf('.') > 0) {
+                            int lastIndex = name.lastIndexOf('.'); /* Get last index for '.' char. */
+                            String str = name.substring(lastIndex); /* Get the extension. */
+                            if (str.equals(FILE_ALERTS_FILTER_EXTENSION)) return true; /* Match path name extension. */
+                        }
+                        return false;
+                    }
+                };
+                /* Returns pathnames for files and directory. */
+                listFiles = alertFiltersFile.listFiles(filter);
+            }
+            return listFiles;
+        }
+
+        @Override
+        public void checkRoles(RoleChecker checker) throws SecurityException { /* N/A */ }
     }
 
     /**
@@ -2733,6 +2894,11 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     public String getEvaluatedIncludedURL() { return evaluatedIncludedURL; }
 
     public void setEvaluatedIncludedURL(String evaluatedIncludedURL) { this.evaluatedIncludedURL = evaluatedIncludedURL; }
+
+    /* Session Properties >> Alert Filters */
+    private final String alertFilters; /* The alert filters file to use for the context. It contains only the alert filters filename (without extension). */
+
+    public String getAlertFilters() { return alertFilters; }
 
     /* Session Properties >> Authentication */
     /* Authentication information for conducting spider, AJAX spider or scan as a user */
