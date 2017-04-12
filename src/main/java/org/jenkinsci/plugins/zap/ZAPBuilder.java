@@ -133,7 +133,6 @@ public class ZAPBuilder extends Builder {
         if (zapHost == null || zapHost.isEmpty()) throw new IllegalArgumentException("ZAP HOST IS MISSING");
         String zapPort = zaproxy.getZapPort();
         if (zapPort == null || zapPort.isEmpty()) throw new IllegalArgumentException("ZAP PORT IS MISSING");
-        String zapSettingsDir = zaproxy.getZapSettingsDir();
         String sessionFilename = zaproxy.getSessionFilename();
         String internalSites = zaproxy.getInternalSites();
         String contextName = zaproxy.getContextName();
@@ -147,7 +146,6 @@ public class ZAPBuilder extends Builder {
         try {
             zapHost = applyMacro(build, listener, zapHost);
             zapPort = applyMacro(build, listener, zapPort);
-            zapSettingsDir = applyMacro(build, listener, zapSettingsDir);
             sessionFilename = applyMacro(build, listener, sessionFilename);
             internalSites = applyMacro(build, listener, internalSites);
             contextName = applyMacro(build, listener, contextName);
@@ -165,7 +163,6 @@ public class ZAPBuilder extends Builder {
 
         zaproxy.setEvaluatedZapHost(zapHost);
         zaproxy.setEvaluatedZapPort(Integer.valueOf(zapPort));
-        zaproxy.setEvaluatedZapSettingsDir(zapSettingsDir);
         zaproxy.setEvaluatedSessionFilename(sessionFilename);
         zaproxy.setEvaluatedInternalSites(internalSites);
         zaproxy.setEvaluatedContextName(contextName);
@@ -179,7 +176,6 @@ public class ZAPBuilder extends Builder {
         Utils.loggerMessage(listener, 1, "HOST = [ {0} ]", zapHost);
         Utils.loggerMessage(listener, 1, "PORT = [ {0} ]", zapPort);
         Utils.lineBreak(listener);
-        Utils.loggerMessage(listener, 1, "ZAP SETTINGS DIRECTORY = [ {0} ]", zapSettingsDir);
         Utils.loggerMessage(listener, 1, "SESSION FILENAME = [ {0} ]", sessionFilename);
         Utils.loggerMessage(listener, 1, "INTERNAL SITES = [ {0} ]", internalSites.trim().replace("\n", ", "));
         Utils.lineBreak(listener);
@@ -201,7 +197,7 @@ public class ZAPBuilder extends Builder {
 
         /* Clear the ZAP Settings folder of all previous zap logs. */
         Utils.loggerMessage(listener, 0, "[{0}] CLEAR LOGS IN SETTINGS...", Utils.ZAP);
-        Utils.loggerMessage(listener, 1, "SETTINGS DIR [ {0} ]", this.zaproxy.getEvaluatedZapSettingsDir());
+        Utils.loggerMessage(listener, 1, "SETTINGS DIR [ {0} ]", this.zaproxy.getZapSettingsDir());
         Utils.loggerMessage(listener, 1, "WORKSPACE [ {0} ]", build.getWorkspace().getRemote());
 
         /* No workspace before the first build, so workspace is null. */
@@ -209,7 +205,7 @@ public class ZAPBuilder extends Builder {
         if (ws != null) {
             File[] listFiles = {};
             try {
-                listFiles = ws.act(new LogCallable(this.zaproxy.getEvaluatedZapSettingsDir()));
+                listFiles = ws.act(new LogCallable(this.zaproxy.getZapSettingsDir()));
             }
             catch (IOException e) {
                 e.printStackTrace(); /* No listener because it's not during a build but it's on the job config page. */
@@ -302,7 +298,7 @@ public class ZAPBuilder extends Builder {
 
             /* Upon ZAP successfully shutting down, copy the files from the ZAP settings directory into the workspace folder. */
             Utils.loggerMessage(listener, 0, "[{0}] LOG SEARCH...", Utils.ZAP);
-            Utils.loggerMessage(listener, 1, "SETTINGS DIR [ {0} ]", this.zaproxy.getEvaluatedZapSettingsDir());
+            Utils.loggerMessage(listener, 1, "SETTINGS DIR [ {0} ]", this.zaproxy.getZapSettingsDir());
             Utils.loggerMessage(listener, 1, "WORKSPACE [ {0} ]", build.getWorkspace().getRemote());
 
             /* No workspace before the first build, so workspace is null. */
@@ -310,7 +306,7 @@ public class ZAPBuilder extends Builder {
             if (ws != null) {
                 File[] listFiles = {};
                 try {
-                    listFiles = ws.act(new LogCallable(this.zaproxy.getEvaluatedZapSettingsDir()));
+                    listFiles = ws.act(new LogCallable(this.zaproxy.getZapSettingsDir()));
                 }
                 catch (IOException e) {
                     e.printStackTrace(); /* No listener because it's not during a build but it's on the job config page. */
