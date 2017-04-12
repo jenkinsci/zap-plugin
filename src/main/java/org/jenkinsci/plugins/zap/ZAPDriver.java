@@ -523,7 +523,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         this.evaluatedInternalSites = envVars.expand(this.evaluatedInternalSites);
         if (this.startZAPFirst) {
             if (!this.autoLoadSession) {
-                if (this.evaluatedSessionFilename == null || this.evaluatedSessionFilename.isEmpty()) throw new IllegalArgumentException("SESSION FILENAME IS MISSING, PROVIDED [ " + this.evaluatedZapSettingsDir + " ]");
+                if (this.evaluatedSessionFilename == null || this.evaluatedSessionFilename.isEmpty()) throw new IllegalArgumentException("SESSION FILENAME IS MISSING, PROVIDED [ " + this.evaluatedSessionFilename + " ]");
                 else Utils.loggerMessage(listener, 1, "(EXP) SESSION FILENAME = [ {0} ]", this.evaluatedSessionFilename);
 
                 if (this.removeExternalSites) {
