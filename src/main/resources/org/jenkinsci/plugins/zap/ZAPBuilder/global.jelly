@@ -36,25 +36,25 @@ SOFTWARE.
   tags they use. Views are always organized according to its owner class,
   so it should be straightforward to find them.
   -->
-  <f:section title="ZAP">
-    <f:entry title="${%Default Host}" field="zapDefaultHost">
+  <f:section title="${%jenkins.systemconfig.zap.default.section.label}">
+    <f:entry title="${%jenkins.systemconfig.zap.default.host.textbox.label}" field="zapDefaultHost">
       <f:textbox default="localhost" clazz="required" />
     </f:entry>
 
-    <f:entry title="${%Default Port}" field="zapDefaultPort">
+    <f:entry title="${%jenkins.systemconfig.zap.default.port.textbox.label}" field="zapDefaultPort">
       <f:textbox default="8090" clazz="required" />
     </f:entry>
   </f:section>
-  <f:section title="ZAP JIRA">
-    <f:entry title="${%JIRA Base Url}" field="jiraBaseURL">
+  <f:section title="${%jenkins.systemconfig.zap.jira.section.label}">
+    <f:entry title="${%jenkins.systemconfig.zap.jira.baseurl.textbox.label}" field="jiraBaseURL">
        <f:textbox default=""  />
     </f:entry>
 
-    <f:entry title="${%Username}" field="jiraUsername">
+    <f:entry title="${%jenkins.systemconfig.zap.jira.username.textbox.label}" field="jiraUsername">
         <f:textbox default=""  />
     </f:entry>
 
-    <f:entry title="${%Password}" field="jiraPassword">
+    <f:entry title="${%jenkins.systemconfig.zap.jira.password.textbox.label}" field="jiraPassword">
         <f:password default=""  />
     </f:entry>
   </f:section>

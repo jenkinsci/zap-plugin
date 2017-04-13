@@ -27,8 +27,8 @@ SOFTWARE.
   <f:entry help="/descriptor/org.jenkinsci.plugins.zap.ZAPCmdLine/help/config">
     <table width="100%">
       <tr>
-        <th>${%Command line option}</th>
-        <th>${%Command line value}</th>
+        <th>${%jenkins.jobconfig.zap.config.cmdlineargs.optionarg.textbox.label}</th>
+        <th>${%jenkins.jobconfig.zap.config.cmdlineargs.valuearg.textbox.label}</th>
       </tr>
       <tr>
         <td><f:textbox field="cmdLineOption"/></td>

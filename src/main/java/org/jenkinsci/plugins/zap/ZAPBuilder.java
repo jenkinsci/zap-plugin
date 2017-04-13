@@ -383,7 +383,7 @@ public class ZAPBuilder extends Builder {
 
         /* This human readable name is used in the configuration screen. */
         @Override
-        public String getDisplayName() { return "Execute ZAP"; }
+        public String getDisplayName() { return Messages.jenkins_jobconfig_addbuildstep_zap(); }
 
         @Override
         public boolean configure(StaplerRequest req, JSONObject formData) throws FormException {
