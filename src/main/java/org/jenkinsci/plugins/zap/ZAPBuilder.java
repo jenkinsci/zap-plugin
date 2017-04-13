@@ -195,10 +195,10 @@ public class ZAPBuilder extends Builder {
         Utils.loggerMessage(listener, 0, "[{0}] END PRE-BUILD ENVIRONMENT VARIABLE REPLACEMENT", Utils.ZAP);
         Utils.lineBreak(listener);
 
-        /* Clear the ZAP Settings folder of all previous zap logs. */
+        /* Clear the ZAP home directory of all previous zap logs. */
         Utils.loggerMessage(listener, 0, "[{0}] CLEAR LOGS IN SETTINGS...", Utils.ZAP);
-        Utils.loggerMessage(listener, 1, "SETTINGS DIR [ {0} ]", this.zaproxy.getZapSettingsDir());
-        Utils.loggerMessage(listener, 1, "WORKSPACE [ {0} ]", build.getWorkspace().getRemote());
+        Utils.loggerMessage(listener, 1, "ZAP HOME DIRECTORY [ {0} ]", this.zaproxy.getZapSettingsDir());
+        Utils.loggerMessage(listener, 1, "JENKINS WORKSPACE [ {0} ]", build.getWorkspace().getRemote());
 
         /* No workspace before the first build, so workspace is null. */
         FilePath ws = build.getWorkspace();
@@ -214,7 +214,7 @@ public class ZAPBuilder extends Builder {
                 e.printStackTrace(); /* No listener because it's not during a build but it's on the job config page. */
             }
 
-            Utils.loggerMessage(listener, 1, "CLEARING SETTINGS/{0}", ZAPDriver.NAME_LOG_DIR.toUpperCase());
+            Utils.loggerMessage(listener, 1, "CLEARING ZAP HOME DIRECTORY/{0}", ZAPDriver.NAME_LOG_DIR.toUpperCase());
             Utils.lineBreak(listener);
 
             for (File listFile : listFiles) {
@@ -296,10 +296,10 @@ public class ZAPBuilder extends Builder {
             Utils.loggerMessage(listener, 0, "[{0}] SHUTDOWN [ SUCCESSFUL ]", Utils.ZAP);
             Utils.lineBreak(listener);
 
-            /* Upon ZAP successfully shutting down, copy the files from the ZAP settings directory into the workspace folder. */
+            /* Upon ZAP successfully shutting down, copy the files from the ZAP home directory into the workspace folder. */
             Utils.loggerMessage(listener, 0, "[{0}] LOG SEARCH...", Utils.ZAP);
-            Utils.loggerMessage(listener, 1, "SETTINGS DIR [ {0} ]", this.zaproxy.getZapSettingsDir());
-            Utils.loggerMessage(listener, 1, "WORKSPACE [ {0} ]", build.getWorkspace().getRemote());
+            Utils.loggerMessage(listener, 1, "ZAP HOME DIRECTORY [ {0} ]", this.zaproxy.getZapSettingsDir());
+            Utils.loggerMessage(listener, 1, "JENKINS WORKSPACE [ {0} ]", build.getWorkspace().getRemote());
 
             /* No workspace before the first build, so workspace is null. */
             FilePath ws = build.getWorkspace();
@@ -452,7 +452,7 @@ public class ZAPBuilder extends Builder {
     }
 
     /**
-     * This class allows to search all ZAP log files in the ZAP settings directory of the remote machine (or local machine if there is no remote machine). Returns a list of logs.
+     * This class allows to search all ZAP log files in the ZAP home directory of the remote machine (or local machine if there is no remote machine). Returns a list of logs.
      */
     private static class LogCallable implements FileCallable<File[]> {
 
@@ -490,7 +490,7 @@ public class ZAPBuilder extends Builder {
     }
 
     /**
-     * Allows to copy a log file from the ZAP settings directory into the job's workspace.
+     * Allows to copy a log file from the ZAP home directory into the job's workspace.
      */
     private static class CopyFileCallable implements FileCallable<String> {
         private static final long serialVersionUID = 1L;
