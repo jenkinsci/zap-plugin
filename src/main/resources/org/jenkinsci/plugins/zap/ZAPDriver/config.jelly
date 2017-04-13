@@ -114,6 +114,11 @@ SOFTWARE.
       <f:textarea />
     </f:entry>
 
+    
+    <f:entry title="${%Alert Filters}" field="alertFilters">
+      <f:select />
+    </f:entry>
+
     <f:entry>
       <f:optionalBlock title="${%Authentication}" field="authMode" inline="true">
         <f:entry>
@@ -127,6 +132,9 @@ SOFTWARE.
             </f:entry>
             <f:entry title="${%Logged in Indicator}" field="loggedInIndicator">
               <f:textbox clazz="required" />
+            </f:entry>
+            <f:entry title="${%Logged out Indicator}" field="loggedOutIndicator">
+              <f:textbox />
             </f:entry>
 
             <f:entry title="------------------------------------------------------------"></f:entry>
