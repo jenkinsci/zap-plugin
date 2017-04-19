@@ -297,6 +297,8 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     @Override
     public String toString() {
         String s = "";
+        s += "\n";
+        s += "\n";
         s += "Admin Configurations\n";
         s += "-------------------------------------------------------\n";
         s += "zapHost [" + zapHost + "]\n";
@@ -307,7 +309,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         s += "jdk [" + jdk + "]\n";
         s += "timeout [" + timeout + "]\n";
         s += "\n";
-        s += "ZAP Settings\n";
+        s += "ZAP Home Directory\n";
         s += "-------------------------------------------------------\n";
         s += "zapSettingsDir [" + zapSettingsDir + "]\n";
         s += "\n";
@@ -505,8 +507,8 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         zapProgram = retrieveZapHomeWithToolInstall(build, listener);
         Utils.loggerMessage(listener, 0, "[{0}] PLUGIN VALIDATION (PLG), VARIABLE VALIDATION AND ENVIRONMENT INJECTOR EXPANSION (EXP)", Utils.ZAP);
 
-        if (this.zapProgram == null || this.zapProgram.isEmpty()) throw new IllegalArgumentException("ZAP PATH IS MISSING, PROVIDED [ " + this.zapProgram + " ]");
-        else Utils.loggerMessage(listener, 1, "ZAP PATH = [ {0} ]", this.zapProgram);
+        if (this.zapProgram == null || this.zapProgram.isEmpty()) throw new IllegalArgumentException("ZAP INSTALLATION DIRECTORY IS MISSING, PROVIDED [ " + this.zapProgram + " ]");
+        else Utils.loggerMessage(listener, 1, "ZAP INSTALLATION DIRECTORY = [ {0} ]", this.zapProgram);
 
         /* System Environment and Build Environment variables will be expanded already, the following step will expand Environment Injector variables. Note: cannot be expanded in pre-build step. */
         EnvVars envVars = build.getEnvironment(listener);
@@ -2803,7 +2805,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
     public String getToolUsed() { return toolUsed; }
 
-    private final String zapHome; /* Environment variable for the ZAP path. */
+    private final String zapHome; /* Environment variable for the ZAP Installation Directory. */
 
     public String getZapHome() { return zapHome; }
 
