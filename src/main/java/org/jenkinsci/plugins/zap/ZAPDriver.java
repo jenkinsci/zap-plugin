@@ -985,8 +985,8 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         map.put("jiraBaseURL", jiraBaseURL);
         map.put("jiraUserName", jiraUsername);
         map.put("jiraPassword", jiraPassword);
-        map.put("jiraProjectKey", jiraProjectKey);
-        map.put("jiraAssignee", jiraAssignee);
+        map.put("projectKey", jiraProjectKey);
+        map.put("assignee", jiraAssignee);
         map.put("high", returnCheckedStatus(jiraAlertHigh));
         map.put("medium", returnCheckedStatus(jiraAlertMedium));
         map.put("low", returnCheckedStatus(jiraAlertLow));
