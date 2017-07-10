@@ -297,6 +297,8 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     @Override
     public String toString() {
         String s = "";
+        s += "\n";
+        s += "\n";
         s += "Admin Configurations\n";
         s += "-------------------------------------------------------\n";
         s += "zapHost [" + zapHost + "]\n";
@@ -307,7 +309,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         s += "jdk [" + jdk + "]\n";
         s += "timeout [" + timeout + "]\n";
         s += "\n";
-        s += "ZAP Settings\n";
+        s += "ZAP Home Directory\n";
         s += "-------------------------------------------------------\n";
         s += "zapSettingsDir [" + zapSettingsDir + "]\n";
         s += "\n";
@@ -505,8 +507,8 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         zapProgram = retrieveZapHomeWithToolInstall(build, listener);
         Utils.loggerMessage(listener, 0, "[{0}] PLUGIN VALIDATION (PLG), VARIABLE VALIDATION AND ENVIRONMENT INJECTOR EXPANSION (EXP)", Utils.ZAP);
 
-        if (this.zapProgram == null || this.zapProgram.isEmpty()) throw new IllegalArgumentException("ZAP PATH IS MISSING, PROVIDED [ " + this.zapProgram + " ]");
-        else Utils.loggerMessage(listener, 1, "ZAP PATH = [ {0} ]", this.zapProgram);
+        if (this.zapProgram == null || this.zapProgram.isEmpty()) throw new IllegalArgumentException("ZAP INSTALLATION DIRECTORY IS MISSING, PROVIDED [ " + this.zapProgram + " ]");
+        else Utils.loggerMessage(listener, 1, "ZAP INSTALLATION DIRECTORY = [ {0} ]", this.zapProgram);
 
         /* System Environment and Build Environment variables will be expanded already, the following step will expand Environment Injector variables. Note: cannot be expanded in pre-build step. */
         EnvVars envVars = build.getEnvironment(listener);
@@ -523,7 +525,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         this.evaluatedInternalSites = envVars.expand(this.evaluatedInternalSites);
         if (this.startZAPFirst) {
             if (!this.autoLoadSession) {
-                if (this.evaluatedSessionFilename == null || this.evaluatedSessionFilename.isEmpty()) throw new IllegalArgumentException("SESSION FILENAME IS MISSING, PROVIDED [ " + this.evaluatedZapSettingsDir + " ]");
+                if (this.evaluatedSessionFilename == null || this.evaluatedSessionFilename.isEmpty()) throw new IllegalArgumentException("SESSION FILENAME IS MISSING, PROVIDED [ " + this.evaluatedSessionFilename + " ]");
                 else Utils.loggerMessage(listener, 1, "(EXP) SESSION FILENAME = [ {0} ]", this.evaluatedSessionFilename);
 
                 if (this.removeExternalSites) {
@@ -539,10 +541,6 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                 else throw new IllegalArgumentException("LOAD SESSION IS MISSING, PROVIDED [ " + this.loadSession + " ]");
             }
         }
-
-        this.evaluatedZapSettingsDir = envVars.expand(this.evaluatedZapSettingsDir);
-        if (this.evaluatedZapSettingsDir == null || this.evaluatedZapSettingsDir.isEmpty()) throw new IllegalArgumentException("ZAP SETTINGS DIRECTORY IS MISSING, PROVIDED [ " + this.evaluatedZapSettingsDir + " ]");
-        else Utils.loggerMessage(listener, 1, "(EXP) ZAP SETTINGS DIRECTORY = [ {0} ]", this.evaluatedZapSettingsDir);
 
         this.evaluatedContextName = envVars.expand(this.evaluatedContextName);
         if (this.evaluatedContextName == null || this.evaluatedContextName.isEmpty()) this.evaluatedContextName = "Jenkins Default Context";
@@ -634,9 +632,9 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         cmd.add(CMD_LINE_API_KEY + "=" + API_KEY);
 
         /* Set the default directory used by ZAP if it's defined and if a scan is provided */
-        if (this.activeScanURL && this.evaluatedZapSettingsDir != null && !this.evaluatedZapSettingsDir.isEmpty()) {
+        if (this.activeScanURL && this.zapSettingsDir != null && !this.zapSettingsDir.isEmpty()) {
             cmd.add(CMD_LINE_DIR);
-            cmd.add(this.evaluatedZapSettingsDir);
+            cmd.add(this.zapSettingsDir);
         }
 
         /* Adds command line arguments if it's provided */
@@ -987,8 +985,8 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         map.put("jiraBaseURL", jiraBaseURL);
         map.put("jiraUserName", jiraUsername);
         map.put("jiraPassword", jiraPassword);
-        map.put("jiraProjectKey", jiraProjectKey);
-        map.put("jiraAssignee", jiraAssignee);
+        map.put("projectKey", jiraProjectKey);
+        map.put("assignee", jiraAssignee);
         map.put("high", returnCheckedStatus(jiraAlertHigh));
         map.put("medium", returnCheckedStatus(jiraAlertMedium));
         map.put("low", returnCheckedStatus(jiraAlertLow));
@@ -1097,7 +1095,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
             if (workspace != null) {
                 File[] listFiles = {};
                 try {
-                    listFiles = workspace.act(new PluginCallable(this.evaluatedZapSettingsDir));
+                    listFiles = workspace.act(new PluginCallable(this.zapSettingsDir));
                 }
                 catch (IOException e) {
                     e.printStackTrace(); /* No listener because it's not during a build but it's on the job config page. */
@@ -2807,7 +2805,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
     public String getToolUsed() { return toolUsed; }
 
-    private final String zapHome; /* Environment variable for the ZAP path. */
+    private final String zapHome; /* Environment variable for the ZAP Installation Directory. */
 
     public String getZapHome() { return zapHome; }
 
@@ -2824,12 +2822,6 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     private final String zapSettingsDir; /* The default directory that ZAP uses */
 
     public String getZapSettingsDir() { return zapSettingsDir; }
-
-    private String evaluatedZapSettingsDir; /* Todo */
-
-    public String getEvaluatedZapSettingsDir() { return evaluatedZapSettingsDir; }
-
-    public void setEvaluatedZapSettingsDir(String evaluatedZapSettingsDir) { this.evaluatedZapSettingsDir = evaluatedZapSettingsDir; }
 
     /* Session Management */
     private final boolean autoLoadSession; /* Todo */
