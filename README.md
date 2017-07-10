@@ -37,7 +37,8 @@ You can also:
     * Jenkins version
     * ZAP version
     * ZAP Jenkins Plugin version
-    * Firefox version
+    * Firefox version (if running AJAX Spider or a Selenium build)
+    * Selenium (if applicable)
   * Upload copies of the <i>zap.log</i> files and a copy of the <i>console output</i> of the jenkins log to <b>[pastebin](https://pastebin.mozilla.org/)</b>.
   * Jenkins is always running on a master, is ZAP running on the master as well or on a separate slave machine?
   * Relevant Jenkins Job Configurations sanitized screenshots.
@@ -45,6 +46,10 @@ You can also:
 ### Issue Tracking
 
 * Issues can be created on the <b>Jenkins JIRA</b> for the component <b>[zap-plugin](https://issues.jenkins-ci.org/issues/?jql=project%20%3D%20JENKINS%20AND%20component%20%3D%20zap-plugin)</b>.
+  * <b>[All](https://issues.jenkins-ci.org/issues/?jql=project%20%3D%20JENKINS%20AND%20component%20%3D%20zap-plugin)</b> Issues
+  * Want to see what we need help with? See <b>[Open, Reopened and Verified](https://issues.jenkins-ci.org/browse/JENKINS-43384?jql=project%20%3D%20JENKINS%20AND%20status%20in%20%28Open%2C%20Reopened%2C%20Verified%29%20AND%20component%20%3D%20zap-plugin)</b> Issues
+  * Want to see what contributors are currently working on? See <b>[In Progress and In Review](https://issues.jenkins-ci.org/browse/JENKINS-43483?jql=project%20%3D%20JENKINS%20AND%20status%20in%20%28%22In%20Progress%22%2C%20%22In%20Review%22%29%20AND%20component%20%3D%20zap-plugin)</b> Issues
+  * Want to see what we've done so far? See <b>[Closed and Resolved](https://issues.jenkins-ci.org/browse/JENKINS-41069?jql=project%20%3D%20JENKINS%20AND%20status%20in%20%28Resolved%2C%20Closed%29%20AND%20component%20%3D%20zap-plugin)</b> Issues
 * <b>Before</b> creating an Issue please read the <b>[JIRA guidelines](https://wiki.jenkins-ci.org/display/JENKINS/How+to+report+an+issue)</b>.
 * <b>Notice</b>: GitHub Issues have been disabled.
 
@@ -53,14 +58,25 @@ You can also:
 * If you find any security vulnerabilities or exploits caused by the plugin, please send a private email to one of the <b>[maintainer(s)](https://wiki.jenkins-ci.org/display/JENKINS/zap+plugin#zapplugin-PluginInformation)</b>.
 * <b>Notice</b>: These should be kept private until a fix is issued.
 
-### Version History
+### Latest Release - Version 1.1.0 (July 10, 2017)
 
-<dl>
-  <dt>Latest Release - Version 1.0.8 (Mar 19, 2017)</dt>
-  <dd><img src="https://wiki.jenkins-ci.org/images/icons/emoticons/warning.gif" alt="warning"> Changed the default authentication script directory for the plugin to match the directory for ZAP (GUI) and updated resource files accordingly. See updated documentation for <b><a href="https://wiki.jenkins-ci.org/display/JENKINS/zap-plugin+Script-Based+Auth">Script-Based Auth</a></b>.</dd>
-</dl>
+* <img src="https://wiki.jenkins.io/s/en_GB/6441/82994790ee2f720a5ec8daf4850ac5b7b34d2194/_/images/icons/emoticons/add.png" alt="add"> <b>[ <a href="https://issues.jenkins-ci.org/browse/JENKINS-39985">JENKINS-39985</a> ]</b> Added support for context Alert Filters.
+* <img src="https://wiki.jenkins.io/s/en_GB/6441/82994790ee2f720a5ec8daf4850ac5b7b34d2194/_/images/icons/emoticons/add.png" alt="add"> <b>[ <a href="https://issues.jenkins-ci.org/browse/JENKINS-43554">JENKINS-43554</a> ]</b> Added support for the internationalization of:
+  1. UI Elements
+  1. Associated Help Doc's
+* <img src="https://wiki.jenkins.io/s/en_GB/6441/82994790ee2f720a5ec8daf4850ac5b7b34d2194/_/images/icons/emoticons/warning.png" alt="warning"> <b>[ <a href="https://issues.jenkins-ci.org/browse/JENKINS-43483">JENKINS-43483</a> ]</b> Added support to the authentication module to be able to utilize Logged Out Indicators.
+* <img src="https://wiki.jenkins.io/s/en_GB/6441/82994790ee2f720a5ec8daf4850ac5b7b34d2194/_/images/icons/emoticons/forbidden.png" alt="remove"> <b>[ <a href="https://issues.jenkins-ci.org/browse/JENKINS-43384">JENKINS-43384</a> ]</b> Removed support from the ZAP Settings Variable for System Environment Variables, Build Variables as well as Environment Inject Plugin Variables since the Job Configuration page is ONLY run on the master and has no access to the slave.
+* <img src="https://wiki.jenkins.io/s/en_GB/6441/82994790ee2f720a5ec8daf4850ac5b7b34d2194/_/images/icons/emoticons/error.png" alt="bugfix"> Bug-fixes:
+  1. Fixed Broken links in Help Files
+  1. Fixed misused variables (evaluatedSessionFilename instead of evaluatedZapSettingsDir) of <i>ZAPDriver.java</i>
+  1. Correct improper use of JIRA Extension parameters
+* <img src="https://wiki.jenkins.io/s/en_GB/6441/82994790ee2f720a5ec8daf4850ac5b7b34d2194/_/images/icons/emoticons/information.png" alt="info"> Usability Improvements:
+  * Updated all affected help files
+  * Created the webapp folder
+  * Established clearer distinction between the ZAP Installation Directory and ZAP Home Directory
+* <img src="https://wiki.jenkins.io/s/en_GB/6441/82994790ee2f720a5ec8daf4850ac5b7b34d2194/_/images/icons/emoticons/information.png" alt="info"> Updated LICENSE and README information.
 
-See <b>[Full Version History](https://wiki.jenkins-ci.org/display/JENKINS/zap-plugin+History)</b>
+See <b>[Full Version History](https://wiki.jenkins.io/display/JENKINS/Version+History)</b>
 
 ### License
 
