@@ -23,14 +23,13 @@ SOFTWARE.
 -->
 
 <?jelly escape-by-default='true'?>
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define"
-  xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
   <!-- This jelly script is used for per-project configuration. See global.jelly for a general discussion about jelly script. -->
 
   <!-- JDK -->
-  <f:section title="${%Java}" />
+  <f:section title="${%jenkins.jobconfig.zap.java.section.label}" />
   <j:set var="jdks" value="${app.JDKs}" />
-  <f:entry title="${%JDK}" field="jdk">
+  <f:entry title="${%jenkins.jobconfig.zap.java.dropdownlist.label}" field="jdk">
     <select class="setting-input validated" name="jdk" checkUrl="'${rootURL}/defaultJDKCheck?value='+this.value">
       <option>${%InheritFromJob}</option>
       <j:forEach var="inst" items="${jdks}">
@@ -39,61 +38,61 @@ SOFTWARE.
     </select>
   </f:entry>
 
-  <f:section title="${%Installation Method}" />
-  <f:radioBlock title="${%Custom Tools Installation}" name="autoInstall" value="true" checked="${instance == null || instance.autoInstall == true}" inline="true">
+  <f:section title="${%jenkins.jobconfig.zap.install.section.label}" />
+  <f:radioBlock title="${%jenkins.jobconfig.zap.install.customtools.radioblock.label}" name="autoInstall" value="true" checked="${instance == null || instance.autoInstall == true}" inline="true">
     <f:entry title=""></f:entry>
-    <f:entry title="${%Name}" field="toolUsed">
+    <f:entry title="${%jenkins.jobconfig.zap.install.customtools.name.dropdownlist.label}" field="toolUsed">
       <f:select />
     </f:entry>
   </f:radioBlock>
-  <f:radioBlock title="${%System Installed}" name="autoInstall" value="false" checked="${instance.autoInstall == false}" inline="true">
+  <f:radioBlock title="${%jenkins.jobconfig.zap.install.system.radioblock.label}" name="autoInstall" value="false" checked="${instance.autoInstall == false}" inline="true">
     <f:entry title=""></f:entry>
-    <f:entry title="${%ZAP Home}" field="zapHome">
+    <f:entry title="${%jenkins.jobconfig.zap.install.system.zapinstalldir.textbox.label}" field="zapHome">
       <f:textbox default="ZAPROXY_HOME" clazz="required" />
     </f:entry>
   </f:radioBlock>
 
-  <f:section title="${%Run Configurations}" />
+  <f:section title="${%jenkins.jobconfig.zap.config.runconfig.section.label}" />
   <f:advanced>
-    <f:entry title="${%Initialization Timeout}"
+    <f:entry title="${%jenkins.jobconfig.zap.config.runconfig.timeout.textbox.label}"
       field="timeout" description="Enter a value in seconds">
       <f:number default="60" clazz="required positive-number" />
     </f:entry>
 
-    <f:section title="${%Add ZAP command line option}">
+    <f:section title="${%jenkins.jobconfig.zap.config.cmdlineargs.section.label}">
       <f:block>
-        <f:repeatableProperty field="cmdLinesZAP" add="${%Add}" />
+        <f:repeatableProperty field="cmdLinesZAP" add="${%jenkins.jobconfig.zap.config.cmdlineargs.addargs.button}" />
       </f:block>
     </f:section>
   </f:advanced>
 
-  <f:section title="${%ZAP Settings}">
-    <f:entry title="${%Path}" field="zapSettingsDir">
+  <f:section title="${%jenkins.jobconfig.zap.config.zaphomedir.section.label}">
+    <f:entry title="${%jenkins.jobconfig.zap.config.zaphomedir.textbox.label}" field="zapSettingsDir">
       <f:textbox clazz="required" />
     </f:entry>
   </f:section>
 
-  <f:section title="${%Session Management}" />
+  <f:section title="${%jenkins.jobconfig.zap.session.section.label}" />
   <j:invoke on="${descriptor}" method="setWorkspace">
     <j:arg type="hudson.FilePath" value="${it.someWorkspace}" />
   </j:invoke>
-  <f:radioBlock title="${%Load Session}" name="autoLoadSession" value="true" checked="${instance == null || instance.autoLoadSession == true}" inline="true">
+  <f:radioBlock title="${%jenkins.jobconfig.zap.session.load.radioblock.label}" name="autoLoadSession" value="true" checked="${instance == null || instance.autoLoadSession == true}" inline="true">
     <f:entry title=""></f:entry>
-    <f:entry title="${%Path}" field="loadSession">
+    <f:entry title="${%jenkins.jobconfig.zap.session.load.filename.dropdownlist.label}" field="loadSession">
       <f:select />
     </f:entry>
   </f:radioBlock>
-  <f:radioBlock title="${%Persist Session}" name="autoLoadSession" value="false" checked="${instance.autoLoadSession == false}" inline="true">
+  <f:radioBlock title="${%jenkins.jobconfig.zap.session.persist.radioblock.label}" name="autoLoadSession" value="false" checked="${instance.autoLoadSession == false}" inline="true">
     <f:entry title=""></f:entry>
-    <f:entry title="${%Filename}" field="sessionFilename">
+    <f:entry title="${%jenkins.jobconfig.zap.session.persist.filename.textbox.label}" field="sessionFilename">
       <f:textbox />
     </f:entry>
     <f:nested>
       <table width="100%">
         <f:entry title=""></f:entry>
-        <f:optionalBlock title="${%Remove External Sites}" field="removeExternalSites" inline="true">
+        <f:optionalBlock title="${%jenkins.jobconfig.zap.sites.removeexternal.checkbox.label}" field="removeExternalSites" inline="true">
           <f:entry title=""></f:entry>
-          <f:entry title="${%Internal Sites}" field="internalSites">
+          <f:entry title="${%jenkins.jobconfig.zap.sites.internal.textarea.label}" field="internalSites">
             <f:textarea />
           </f:entry>
         </f:optionalBlock>
@@ -101,61 +100,69 @@ SOFTWARE.
     </f:nested>
   </f:radioBlock>
 
-  <f:section title="${%Session Properties}">
-    <f:entry title="${%Context Name}" field="contextName">
+  <f:section title="${%jenkins.jobconfig.zap.session.properties.section.label}">
+    <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.contextname.textbox.label}" field="contextName">
       <f:textbox clazz="required" />
     </f:entry>
 
-    <f:entry title="${%Include in Context}" field="includedURL">
+    <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.includeincontext.textarea.label}" field="includedURL">
       <f:textarea />
     </f:entry>
 
-    <f:entry title="${%Exclude from Context}" field="excludedURL">
+    <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.excludefromcontext.textarea.label}" field="excludedURL">
       <f:textarea />
+    </f:entry>
+
+    
+    <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.alertfilters.dropdownlist.label}" field="alertFilters">
+      <f:select />
     </f:entry>
 
     <f:entry>
-      <f:optionalBlock title="${%Authentication}" field="authMode" inline="true">
+      <f:optionalBlock title="${%jenkins.jobconfig.zap.session.properties.context.authentication.checkbox.label}" field="authMode" inline="true">
         <f:entry>
           <table width="100%">
             <f:entry title="------------------------------------------------------------"></f:entry>
-            <f:entry title="${%Username}" field="username">
+            <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.authentication.username.textbox.label}" field="username">
               <f:textbox clazz="required" />
             </f:entry>
-            <f:entry title="${%Password}" field="password">
+            <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.authentication.password.textbox.label}" field="password">
               <f:password clazz="required" />
             </f:entry>
-            <f:entry title="${%Logged in Indicator}" field="loggedInIndicator">
+            <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.authentication.loggedinindicator.textbox.label}" field="loggedInIndicator">
               <f:textbox clazz="required" />
+            </f:entry>
+            <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.authentication.loggedoutindicator.textbox.label}" field="loggedOutIndicator">
+              <f:textbox />
             </f:entry>
 
             <f:entry title="------------------------------------------------------------"></f:entry>
-            <f:radioBlock title="${%Form-based Authentication}" name="authMethod" value="FORM_BASED" checked="${instance == null || instance.isAuthMethod('FORM_BASED')}" inline="true">
+            <f:radioBlock title="${%jenkins.jobconfig.zap.session.properties.context.authentication.form-based.radioblock.label}" name="authMethod" value="FORM_BASED" checked="${instance == null || instance.isAuthMethod('FORM_BASED')}" inline="true">
               <f:nested>
                 <f:entry title=""></f:entry>
-                <f:entry title="${%Login Form Target URL}" field="loginURL">
+                <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.authentication.form-based.targeturl.textbox.label}" field="loginURL">
                   <f:textbox clazz="required" />
                 </f:entry>
-                <f:entry title="${%Username Parameter}" field="usernameParameter">
+                <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.authentication.form-based.usernameparam.textbox.label}" field="usernameParameter">
                   <f:textbox clazz="required" />
                 </f:entry>
-                <f:entry title="${%Password Parameter}" field="passwordParameter">
+                <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.authentication.form-based.passwordparam.textbox.label}" field="passwordParameter">
                   <f:textbox clazz="required" />
                 </f:entry>
-                <f:entry title="${%Extra POST Data}" field="extraPostData">
+                <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.authentication.form-based.extrapostdata.textbox.label}" field="extraPostData">
                   <f:textbox />
                 </f:entry>
               </f:nested>
             </f:radioBlock>
 
-            <f:radioBlock title="${%Script-based Authentication}" name="authMethod" value="SCRIPT_BASED" checked="${instance.isAuthMethod('SCRIPT_BASED')}" inline="true">
+            <f:radioBlock title="${%jenkins.jobconfig.zap.session.properties.context.authentication.script-based.radioblock.label}" name="authMethod" value="SCRIPT_BASED" checked="${instance.isAuthMethod('SCRIPT_BASED')}" inline="true">
               <f:nested>
                 <f:entry title=""></f:entry>
-                <f:entry title="${%Script}" field="authScript">
+                <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.authentication.script-based.filename.dropdownlist.label}" field="authScript">
                   <f:select />
                 </f:entry>
                 <f:block>
-                  <f:repeatableProperty field="authScriptParams" add="${%Add Script Parameter}"/>
+                  <f:repeatableProperty field="authScriptParams" add="${%jenkins.jobconfig.zap.session.properties.context.authentication.script-based.addparam.button}"/>
                 </f:block>
               </f:nested>
             </f:radioBlock>
@@ -166,57 +173,57 @@ SOFTWARE.
     </f:entry>
   </f:section>
 
-  <f:section title="${%Attack Mode}">
-    <f:entry title="${%Starting Point}" field="targetURL">
+  <f:section title="${%jenkins.jobconfig.zap.attackmode.section.label}">
+    <f:entry title="${%jenkins.jobconfig.zap.attackmode.targeturl.textbox.label}" field="targetURL">
       <f:textbox clazz="required" />
     </f:entry>
     <f:entry>
-      <f:optionalBlock title="${%Spider Scan}" field="spiderScanURL" inline="true">
+      <f:optionalBlock title="${%jenkins.jobconfig.zap.attackmode.spiderscan.checkbox.label}" field="spiderScanURL" inline="true">
         <f:entry>
           <table width="100%">
-            <f:optionalBlock title="${%Recurse}" field="spiderScanRecurse" checked="${instance == null || instance.spiderScanRecurse == true}" inline="true" />
-            <f:optionalBlock title="${%Subtree Only}" field="spiderScanSubtreeOnly" inline="true" />
-            <f:entry title="${%Max Children to Crawl}" field="spiderScanMaxChildrenToCrawl">
+            <f:optionalBlock title="${%jenkins.jobconfig.zap.attackmode.spiderscan.recurse.checkbox.label}" field="spiderScanRecurse" checked="${instance == null || instance.spiderScanRecurse == true}" inline="true" />
+            <f:optionalBlock title="${%jenkins.jobconfig.zap.attackmode.spiderscan.subtreeonly.checkbox.label}" field="spiderScanSubtreeOnly" inline="true" />
+            <f:entry title="${%jenkins.jobconfig.zap.attackmode.spiderscan.maxchildrentocrawl.textbox.label}" field="spiderScanMaxChildrenToCrawl">
               <f:textbox default="0" clazz="required" />
             </f:entry>
           </table>
         </f:entry>
       </f:optionalBlock>
 
-      <f:optionalBlock title="${%AJAX Spider}" field="ajaxSpiderURL" inline="true">
+      <f:optionalBlock title="${%jenkins.jobconfig.zap.attackmode.ajaxspider.checkbox.label}" field="ajaxSpiderURL" inline="true">
         <f:entry>
           <table width="100%">
-            <f:optionalBlock title="${%In Scope Only}" field="ajaxSpiderInScopeOnly" inline="true" />
+            <f:optionalBlock title="${%jenkins.jobconfig.zap.attackmode.ajaxspider.inscopeonly.checkbox.label}" field="ajaxSpiderInScopeOnly" inline="true" />
           </table>
         </f:entry>
       </f:optionalBlock>
 
-      <f:optionalBlock title="${%Active Scan}" field="activeScanURL" inline="true">
+      <f:optionalBlock title="${%jenkins.jobconfig.zap.attackmode.activescan.checkbox.label}" field="activeScanURL" inline="true">
         <f:entry>
           <table width="100%">
-            <f:entry title="${%Policy}" field="activeScanPolicy">
+            <f:entry title="${%jenkins.jobconfig.zap.attackmode.activescan.policy.dropdownlist.label}" field="activeScanPolicy">
                <f:select />
             </f:entry>
-            <f:optionalBlock title="${%Recurse}" field="activeScanRecurse" checked="${instance == null || instance.activeScanRecurse == true}" inline="true" />
+            <f:optionalBlock title="${%jenkins.jobconfig.zap.attackmode.activescan.recurse.checkbox.label}" field="activeScanRecurse" checked="${instance == null || instance.activeScanRecurse == true}" inline="true" />
           </table>
         </f:entry>
       </f:optionalBlock>
     </f:entry>
   </f:section>
 
-  <f:section title="${%Finalize Run}">
-    <f:optionalBlock title="${%Generate Reports}" field="generateReports" inline="true">
+  <f:section title="${%jenkins.jobconfig.zap.finalize.section.label}">
+    <f:optionalBlock title="${%jenkins.jobconfig.zap.finalize.reports.checkbox.label}" field="generateReports" inline="true">
       <f:entry>
         <table width="100%">
           <f:entry title="------------------------------------------------------------"></f:entry>
-          <f:optionalBlock title="${%Clean Workspace Reports}" field="deleteReports" inline="true" />
-          <f:entry title="${%Filename}" field="reportFilename">
+          <f:optionalBlock title="${%jenkins.jobconfig.zap.finalize.reports.cleanworkspace.checkbox.label}" field="deleteReports" inline="true" />
+          <f:entry title="${%jenkins.jobconfig.zap.finalize.reports.filename.textbox.label}" field="reportFilename">
             <f:textbox default="JENKINS_ZAP_VULNERABILITY_REPORT" clazz="required" />
           </f:entry>
-          <f:radioBlock title="${%Generate Report}" name="selectedReportMethod" value="DEFAULT_REPORT" checked="${instance == null || instance.isSelectedReportMethod('DEFAULT_REPORT')}" inline="true">
+          <f:radioBlock title="${%jenkins.jobconfig.zap.finalize.reports.generatereport.radioblock.label}" name="selectedReportMethod" value="DEFAULT_REPORT" checked="${instance == null || instance.isSelectedReportMethod('DEFAULT_REPORT')}" inline="true">
             <f:nested>
               <f:entry title=""></f:entry>
-              <f:entry title="${%Format}" field="selectedReportFormats">
+              <f:entry title="${%jenkins.jobconfig.zap.finalize.reports.generatereport.format.textbox.label}" field="selectedReportFormats">
                 <select name="selectedReportFormats" multiple="multiple" size="${descriptor.getAllFormats().size()}" class="setting-input select">
                   <j:forEach var="aFormat" items="${descriptor.getAllFormats()}">
                     <j:choose>
@@ -232,10 +239,10 @@ SOFTWARE.
               </f:entry>
             </f:nested>
           </f:radioBlock>
-          <f:radioBlock title="${%Export Report}" name="selectedReportMethod" value="EXPORT_REPORT" checked="${instance.isSelectedReportMethod('EXPORT_REPORT')}" inline="true">
+          <f:radioBlock title="${%jenkins.jobconfig.zap.finalize.reports.exportreport.radioblock.label}" name="selectedReportMethod" value="EXPORT_REPORT" checked="${instance.isSelectedReportMethod('EXPORT_REPORT')}" inline="true">
             <f:nested>
               <f:entry title=""></f:entry>
-              <f:entry title="${%Format}" field="selectedExportFormats">
+              <f:entry title="${%jenkins.jobconfig.zap.finalize.reports.exportreport.format.textbox.label}" field="selectedExportFormats">
                 <select name="selectedExportFormats" multiple="multiple" size="${descriptor.getAllExportFormats().size()}" class="setting-input select">
                   <j:forEach var="aFormat" items="${descriptor.getAllExportFormats()}">
                     <j:choose>
@@ -249,49 +256,49 @@ SOFTWARE.
                   </j:forEach>
                 </select>
               </f:entry>
-              <f:section title="${%Source Details}" >
-                <f:entry title="${%Title}" field="exportreportTitle">
+              <f:section title="${%jenkins.jobconfig.zap.finalize.reports.exportreport.source.section.label}" >
+                <f:entry title="${%jenkins.jobconfig.zap.finalize.reports.exportreport.source.title.textbox.label}" field="exportreportTitle">
                   <f:textbox />
                 </f:entry>
-                <f:entry title="${%By}" field="exportreportBy">
+                <f:entry title="${%jenkins.jobconfig.zap.finalize.reports.exportreport.source.by.textbox.label}" field="exportreportBy">
                   <f:textbox />
                 </f:entry>
-                <f:entry title="${%For}" field="exportreportFor">
+                <f:entry title="${%jenkins.jobconfig.zap.finalize.reports.exportreport.source.for.textbox.label}" field="exportreportFor">
                   <f:textbox />
                 </f:entry>
-                <f:entry title="${%Scan Date}" field="exportreportScanDate">
+                <f:entry title="${%jenkins.jobconfig.zap.finalize.reports.exportreport.source.scandate.textbox.label}" field="exportreportScanDate">
                   <f:textbox />
                 </f:entry>
-                <f:entry title="${%Report Date}" field="exportreportReportDate">
+                <f:entry title="${%jenkins.jobconfig.zap.finalize.reports.exportreport.source.reportdate.textbox.label}" field="exportreportReportDate">
                   <f:textbox />
                 </f:entry>
-                <f:entry title="${%Scan Version}" field="exportreportScanVersion">
+                <f:entry title="${%jenkins.jobconfig.zap.finalize.reports.exportreport.source.scanver.textbox.label}" field="exportreportScanVersion">
                   <f:textbox />
                 </f:entry>
-                <f:entry title="${%Report Version}" field="exportreportReportVersion">
+                <f:entry title="${%jenkins.jobconfig.zap.finalize.reports.exportreport.source.reportver.textbox.label}" field="exportreportReportVersion">
                   <f:textbox />
                 </f:entry>
-                <f:entry title="${%Description}" field="exportreportReportDescription">
+                <f:entry title="${%jenkins.jobconfig.zap.finalize.reports.exportreport.source.description.textarea.label}" field="exportreportReportDescription">
                   <f:textarea />
                 </f:entry>
               </f:section>
-              <f:section title="${%Alert Severity}" >
-                <f:optionalBlock title="${%High Alerts}" field="exportreportAlertHigh" inline="true" checked="${instance == null || instance.exportreportAlertHigh == true}" />
-                <f:optionalBlock title="${%Medium Alerts}" field="exportreportAlertMedium" inline="true" checked="${instance == null || instance.exportreportAlertMedium == true}" />
-                <f:optionalBlock title="${%Low Alerts}" field="exportreportAlertLow" inline="true" checked="${instance == null || instance.exportreportAlertLow == true}" />
-                <f:optionalBlock title="${%Informational Alerts}" field="exportreportAlertInformational" inline="true" checked="${instance == null || instance.exportreportAlertInformational == true}" />
+              <f:section title="${%jenkins.jobconfig.zap.finalize.reports.exportreport.risk.severity.section.label}" >
+                <f:optionalBlock title="${%jenkins.jobconfig.zap.finalize.reports.exportreport.risk.severity.high.checkbox.label}" field="exportreportAlertHigh" inline="true" checked="${instance == null || instance.exportreportAlertHigh == true}" />
+                <f:optionalBlock title="${%jenkins.jobconfig.zap.finalize.reports.exportreport.risk.severity.medium.checkbox.label}" field="exportreportAlertMedium" inline="true" checked="${instance == null || instance.exportreportAlertMedium == true}" />
+                <f:optionalBlock title="${%jenkins.jobconfig.zap.finalize.reports.exportreport.risk.severity.low.checkbox.label}" field="exportreportAlertLow" inline="true" checked="${instance == null || instance.exportreportAlertLow == true}" />
+                <f:optionalBlock title="${%jenkins.jobconfig.zap.finalize.reports.exportreport.risk.severity.info.checkbox.label}" field="exportreportAlertInformational" inline="true" checked="${instance == null || instance.exportreportAlertInformational == true}" />
               </f:section>
-              <f:section title="${%Alert Details}" >
-                <f:optionalBlock title="${%CWE ID}" field="exportreportCWEID" inline="true" checked="${instance == null || instance.exportreportCWEID == true}" />
-                <f:optionalBlock title="${%WASC ID}" field="exportreportWASCID" inline="true" checked="${instance == null || instance.exportreportWASCID == true}" />
-                <f:optionalBlock title="${%Description}" field="exportreportDescription" inline="true" checked="${instance == null || instance.exportreportDescription == true}" />
-                <f:optionalBlock title="${%Other Info}" field="exportreportOtherInfo" inline="true" checked="${instance == null || instance.exportreportOtherInfo == true}" />
-                <f:optionalBlock title="${%Solution}" field="exportreportSolution" inline="true" checked="${instance == null || instance.exportreportSolution == true}" />
-                <f:optionalBlock title="${%Reference}" field="exportreportReference" inline="true" checked="${instance == null || instance.exportreportReference == true}" />
-                <f:optionalBlock title="${%Request Header}" field="exportreportRequestHeader" inline="true" />
-                <f:optionalBlock title="${%Response Header}" field="exportreportResponseHeader" inline="true" />
-                <f:optionalBlock title="${%Request Body}" field="exportreportRequestBody" inline="true" />
-                <f:optionalBlock title="${%Response Body}" field="exportreportResponseBody" inline="true" />
+              <f:section title="${%jenkins.jobconfig.zap.finalize.reports.exportreport.details.section.label}" >
+                <f:optionalBlock title="${%jenkins.jobconfig.zap.finalize.reports.exportreport.details.cweid.checkbox.label}" field="exportreportCWEID" inline="true" checked="${instance == null || instance.exportreportCWEID == true}" />
+                <f:optionalBlock title="${%jenkins.jobconfig.zap.finalize.reports.exportreport.details.wascid.checkbox.label}" field="exportreportWASCID" inline="true" checked="${instance == null || instance.exportreportWASCID == true}" />
+                <f:optionalBlock title="${%jenkins.jobconfig.zap.finalize.reports.exportreport.details.description.checkbox.label}" field="exportreportDescription" inline="true" checked="${instance == null || instance.exportreportDescription == true}" />
+                <f:optionalBlock title="${%jenkins.jobconfig.zap.finalize.reports.exportreport.details.otherinfo.checkbox.label}" field="exportreportOtherInfo" inline="true" checked="${instance == null || instance.exportreportOtherInfo == true}" />
+                <f:optionalBlock title="${%jenkins.jobconfig.zap.finalize.reports.exportreport.details.solution.checkbox.label}" field="exportreportSolution" inline="true" checked="${instance == null || instance.exportreportSolution == true}" />
+                <f:optionalBlock title="${%jenkins.jobconfig.zap.finalize.reports.exportreport.details.reference.checkbox.label}" field="exportreportReference" inline="true" checked="${instance == null || instance.exportreportReference == true}" />
+                <f:optionalBlock title="${%jenkins.jobconfig.zap.finalize.reports.exportreport.details.requestheader.checkbox.label}" field="exportreportRequestHeader" inline="true" />
+                <f:optionalBlock title="${%jenkins.jobconfig.zap.finalize.reports.exportreport.details.responseheader.checkbox.label}" field="exportreportResponseHeader" inline="true" />
+                <f:optionalBlock title="${%jenkins.jobconfig.zap.finalize.reports.exportreport.details.requestbody.checkbox.label}" field="exportreportRequestBody" inline="true" />
+                <f:optionalBlock title="${%jenkins.jobconfig.zap.finalize.reports.exportreport.details.responsebody.checkbox.label}" field="exportreportResponseBody" inline="true" />
               </f:section>
             </f:nested>
           </f:radioBlock>
@@ -300,20 +307,20 @@ SOFTWARE.
       </f:entry>
     </f:optionalBlock>
 
-    <f:optionalBlock title="${%Create JIRA Issues - SEE WARNING}" field="jiraCreate" inline="true">
+    <f:optionalBlock title="${%jenkins.jobconfig.zap.finalize.jira.checkbox.label}" field="jiraCreate" inline="true">
       <f:entry>
         <table width="100%">
-          <f:entry title="${%Project Key}" field="jiraProjectKey">
+          <f:entry title="${%jenkins.jobconfig.zap.finalize.jira.config.projectkey.textbox.label}" field="jiraProjectKey">
             <f:textbox clazz="required" />
           </f:entry>
-          <f:entry title="${%Assignee}" field="jiraAssignee">
+          <f:entry title="${%jenkins.jobconfig.zap.finalize.jira.config.assignee.textbox.label}" field="jiraAssignee">
             <f:textbox clazz="required" />
           </f:entry>
 
-          <f:optionalBlock title="${%Export High Alerts}" field="jiraAlertHigh" inline="true" />
-          <f:optionalBlock title="${%Export Medium Alerts}" field="jiraAlertMedium" inline="true" />
-          <f:optionalBlock title="${%Export Low Alerts}" field="jiraAlertLow" inline="true" />
-          <f:optionalBlock title="${%Filter Issue URL's by Resource Type}" field="jiraFilterIssuesByResourceType" inline="true" />
+          <f:optionalBlock title="${%jenkins.jobconfig.zap.finalize.jira.export.high.checkbox.label}" field="jiraAlertHigh" inline="true" />
+          <f:optionalBlock title="${%jenkins.jobconfig.zap.finalize.jira.export.medium.checkbox.label}" field="jiraAlertMedium" inline="true" />
+          <f:optionalBlock title="${%jenkins.jobconfig.zap.finalize.jira.export.low.checkbox.label}" field="jiraAlertLow" inline="true" />
+          <f:optionalBlock title="${%jenkins.jobconfig.zap.finalize.jira.config.filterbyresourcetype.checkbox.label}" field="jiraFilterIssuesByResourceType" inline="true" />
         </table>
       </f:entry>
     </f:optionalBlock>

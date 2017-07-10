@@ -24,11 +24,11 @@ SOFTWARE.
 
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-  <f:entry help="/descriptor/com.github.jenkinsci.zaproxyplugin.ZAPAuthScriptParam/help/config">
+  <f:entry help="/descriptor/org.jenkinsci.plugins.zap.ZAPAuthScriptParam/help/config">
     <table width="100%">
       <tr>
-        <th>${%Script Parameter Name}</th>
-        <th>${%Script Parameter Value}</th>
+        <th>${%jenkins.jobconfig.zap.session.properties.context.authentication.script-based.nameparam.textbox.label}</th>
+        <th>${%jenkins.jobconfig.zap.session.properties.context.authentication.script-based.valueparam.textbox.label}</th>
       </tr>
       <tr>
         <td><f:textbox field="scriptParameterName"/></td>
