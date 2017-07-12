@@ -26,24 +26,24 @@ SOFTWARE.
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
   <!-- This jelly script is used for per-project configuration. See global.jelly for a general discussion about jelly script. -->
 
-  <f:section title="${%Admin Configurations}">
-    <f:entry title="${%Workspace}">
+  <f:section title="${%jenkins.jobconfig.zap.defaultoverride.section.label}">
+    <f:entry title="${%jenkins.jobconfig.zap.workspace.label}">
       ${it.workspace}
     </f:entry>
 
     <f:entry title=""></f:entry>
 
-    <f:entry title="${%Override Host}" field="zapHost" description="Default Host is : ${descriptor.zapDefaultHost} (${%Configured under 'Manage Jenkins' > 'Configure System'})">
+    <f:entry title="${%jenkins.jobconfig.zap.defaultoverride.host.textbox.label}" field="zapHost" description="${%jenkins.jobconfig.zap.defaultoverride.host.textbox.description(descriptor.zapDefaultHost)}">
       <f:textbox clazz="required" default="${descriptor.zapDefaultHost}" />
     </f:entry>
 
-    <f:entry title="${%Override Port}" field="zapPort" description="Default Port is : ${descriptor.zapDefaultPort} (${%Configured under 'Manage Jenkins' > 'Configure System'})">
+    <f:entry title="${%jenkins.jobconfig.zap.defaultoverride.port.textbox.label}" field="zapPort" description="${%jenkins.jobconfig.zap.defaultoverride.port.textbox.description(descriptor.zapDefaultPort)}">
       <f:textbox default="${descriptor.zapDefaultPort}" clazz="required" />
     </f:entry>
   </f:section>
 
-  <f:section title="${%Startup}" />
-    <f:optionalBlock title="${%Run as Pre-Build Step}" field="startZAPFirst" inline="true" />
+  <f:section title="${%jenkins.jobconfig.zap.startup.section.label}" />
+    <f:optionalBlock title="${%jenkins.jobconfig.zap.startup.selenium.checkbox.label}" field="startZAPFirst" inline="true" />
     <!-- Load the config.jelly bind to ZAPDriver class. This code doesn't work : <st:include page="config.jelly" class="com.github.jenkinsci.zaproxyplugin.ZAPDriver"/>. It doesn't create an ZAPDriver. Use f:property instead. -->
     <f:property field="zaproxy" />
 </j:jelly>

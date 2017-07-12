@@ -133,7 +133,6 @@ public class ZAPBuilder extends Builder {
         if (zapHost == null || zapHost.isEmpty()) throw new IllegalArgumentException("ZAP HOST IS MISSING");
         String zapPort = zaproxy.getZapPort();
         if (zapPort == null || zapPort.isEmpty()) throw new IllegalArgumentException("ZAP PORT IS MISSING");
-        String zapSettingsDir = zaproxy.getZapSettingsDir();
         String sessionFilename = zaproxy.getSessionFilename();
         String internalSites = zaproxy.getInternalSites();
         String contextName = zaproxy.getContextName();
@@ -147,7 +146,6 @@ public class ZAPBuilder extends Builder {
         try {
             zapHost = applyMacro(build, listener, zapHost);
             zapPort = applyMacro(build, listener, zapPort);
-            zapSettingsDir = applyMacro(build, listener, zapSettingsDir);
             sessionFilename = applyMacro(build, listener, sessionFilename);
             internalSites = applyMacro(build, listener, internalSites);
             contextName = applyMacro(build, listener, contextName);
@@ -165,7 +163,6 @@ public class ZAPBuilder extends Builder {
 
         zaproxy.setEvaluatedZapHost(zapHost);
         zaproxy.setEvaluatedZapPort(Integer.valueOf(zapPort));
-        zaproxy.setEvaluatedZapSettingsDir(zapSettingsDir);
         zaproxy.setEvaluatedSessionFilename(sessionFilename);
         zaproxy.setEvaluatedInternalSites(internalSites);
         zaproxy.setEvaluatedContextName(contextName);
@@ -179,7 +176,6 @@ public class ZAPBuilder extends Builder {
         Utils.loggerMessage(listener, 1, "HOST = [ {0} ]", zapHost);
         Utils.loggerMessage(listener, 1, "PORT = [ {0} ]", zapPort);
         Utils.lineBreak(listener);
-        Utils.loggerMessage(listener, 1, "ZAP SETTINGS DIRECTORY = [ {0} ]", zapSettingsDir);
         Utils.loggerMessage(listener, 1, "SESSION FILENAME = [ {0} ]", sessionFilename);
         Utils.loggerMessage(listener, 1, "INTERNAL SITES = [ {0} ]", internalSites.trim().replace("\n", ", "));
         Utils.lineBreak(listener);
@@ -199,17 +195,17 @@ public class ZAPBuilder extends Builder {
         Utils.loggerMessage(listener, 0, "[{0}] END PRE-BUILD ENVIRONMENT VARIABLE REPLACEMENT", Utils.ZAP);
         Utils.lineBreak(listener);
 
-        /* Clear the ZAP Settings folder of all previous zap logs. */
+        /* Clear the ZAP home directory of all previous zap logs. */
         Utils.loggerMessage(listener, 0, "[{0}] CLEAR LOGS IN SETTINGS...", Utils.ZAP);
-        Utils.loggerMessage(listener, 1, "SETTINGS DIR [ {0} ]", this.zaproxy.getEvaluatedZapSettingsDir());
-        Utils.loggerMessage(listener, 1, "WORKSPACE [ {0} ]", build.getWorkspace().getRemote());
+        Utils.loggerMessage(listener, 1, "ZAP HOME DIRECTORY [ {0} ]", this.zaproxy.getZapSettingsDir());
+        Utils.loggerMessage(listener, 1, "JENKINS WORKSPACE [ {0} ]", build.getWorkspace().getRemote());
 
         /* No workspace before the first build, so workspace is null. */
         FilePath ws = build.getWorkspace();
         if (ws != null) {
             File[] listFiles = {};
             try {
-                listFiles = ws.act(new LogCallable(this.zaproxy.getEvaluatedZapSettingsDir()));
+                listFiles = ws.act(new LogCallable(this.zaproxy.getZapSettingsDir()));
             }
             catch (IOException e) {
                 e.printStackTrace(); /* No listener because it's not during a build but it's on the job config page. */
@@ -218,7 +214,7 @@ public class ZAPBuilder extends Builder {
                 e.printStackTrace(); /* No listener because it's not during a build but it's on the job config page. */
             }
 
-            Utils.loggerMessage(listener, 1, "CLEARING SETTINGS/{0}", ZAPDriver.NAME_LOG_DIR.toUpperCase());
+            Utils.loggerMessage(listener, 1, "CLEARING ZAP HOME DIRECTORY/{0}", ZAPDriver.NAME_LOG_DIR.toUpperCase());
             Utils.lineBreak(listener);
 
             for (File listFile : listFiles) {
@@ -300,17 +296,17 @@ public class ZAPBuilder extends Builder {
             Utils.loggerMessage(listener, 0, "[{0}] SHUTDOWN [ SUCCESSFUL ]", Utils.ZAP);
             Utils.lineBreak(listener);
 
-            /* Upon ZAP successfully shutting down, copy the files from the ZAP settings directory into the workspace folder. */
+            /* Upon ZAP successfully shutting down, copy the files from the ZAP home directory into the workspace folder. */
             Utils.loggerMessage(listener, 0, "[{0}] LOG SEARCH...", Utils.ZAP);
-            Utils.loggerMessage(listener, 1, "SETTINGS DIR [ {0} ]", this.zaproxy.getEvaluatedZapSettingsDir());
-            Utils.loggerMessage(listener, 1, "WORKSPACE [ {0} ]", build.getWorkspace().getRemote());
+            Utils.loggerMessage(listener, 1, "ZAP HOME DIRECTORY [ {0} ]", this.zaproxy.getZapSettingsDir());
+            Utils.loggerMessage(listener, 1, "JENKINS WORKSPACE [ {0} ]", build.getWorkspace().getRemote());
 
             /* No workspace before the first build, so workspace is null. */
             FilePath ws = build.getWorkspace();
             if (ws != null) {
                 File[] listFiles = {};
                 try {
-                    listFiles = ws.act(new LogCallable(this.zaproxy.getEvaluatedZapSettingsDir()));
+                    listFiles = ws.act(new LogCallable(this.zaproxy.getZapSettingsDir()));
                 }
                 catch (IOException e) {
                     e.printStackTrace(); /* No listener because it's not during a build but it's on the job config page. */
@@ -387,7 +383,7 @@ public class ZAPBuilder extends Builder {
 
         /* This human readable name is used in the configuration screen. */
         @Override
-        public String getDisplayName() { return "Execute ZAP"; }
+        public String getDisplayName() { return Messages.jenkins_jobconfig_addbuildstep_zap(); }
 
         @Override
         public boolean configure(StaplerRequest req, JSONObject formData) throws FormException {
@@ -456,7 +452,7 @@ public class ZAPBuilder extends Builder {
     }
 
     /**
-     * This class allows to search all ZAP log files in the ZAP settings directory of the remote machine (or local machine if there is no remote machine). Returns a list of logs.
+     * This class allows to search all ZAP log files in the ZAP home directory of the remote machine (or local machine if there is no remote machine). Returns a list of logs.
      */
     private static class LogCallable implements FileCallable<File[]> {
 
@@ -494,7 +490,7 @@ public class ZAPBuilder extends Builder {
     }
 
     /**
-     * Allows to copy a log file from the ZAP settings directory into the job's workspace.
+     * Allows to copy a log file from the ZAP home directory into the job's workspace.
      */
     private static class CopyFileCallable implements FileCallable<String> {
         private static final long serialVersionUID = 1L;
