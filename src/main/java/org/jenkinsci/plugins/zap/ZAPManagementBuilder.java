@@ -26,15 +26,12 @@ package org.jenkinsci.plugins.zap;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.jenkinsci.remoting.RoleChecker;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.FilePath.FileCallable;
@@ -43,37 +40,18 @@ import hudson.Proc;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
-import hudson.model.Result;
 import hudson.remoting.VirtualChannel;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Publisher;
 import hudson.tasks.Recorder;
 
-/**
- * 
- * @author Goran Sarenkapa
- * 
- */
 public class ZAPManagementBuilder extends Recorder {
 
 
     @DataBoundConstructor
     public ZAPManagementBuilder(ZAPManagement management) {
         this.management = management;
-
-        /* Call the set methods of ZAPDriver to set the values */
-        // this.zaproxy.setJiraUsername(ZAPBuilder.DESCRIPTOR.getJiraUsername());
-        // this.zaproxy.setJiraPassword(ZAPBuilder.DESCRIPTOR.getJiraPassword());
-        // ZAPInterfaceAction zapInterface =
-        // build.getAction(ZAPInterfaceAction.class);
-        //
-        // System.out.println("my action timeout: " +
-        // zapInterface.getTimeout());
-        // System.out.println("my action install dir: " +
-        // zapInterface.getInstallationDir());
-        // System.out.println("my action home dir: " +
-        // zapInterface.getHomeDir());
     }
 
     private ZAPManagement management;
@@ -95,33 +73,20 @@ public class ZAPManagementBuilder extends Recorder {
      * @throws IOException */
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException {
-        listener.getLogger().println("[ZAP Jenkins Plugin] POST-BUILD MANAGEMENT");
+        Utils.loggerMessage(listener, 0, "--------------------------------------------------");
+        Utils.lineBreak(listener);
+        Utils.loggerMessage(listener, 0, "[{0}] POST-BUILD MANAGEMENT INITIALIZATION", Utils.ZAP);
         ZAPInterfaceAction zapInterface = build.getAction(ZAPInterfaceAction.class);
         if (zapInterface != null) {
             if (zapInterface.getBuildStatus()) {
-                System.out.println("----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ");
-                System.out.println("my action timeout: " + zapInterface.getTimeout());
-                System.out.println("my action home dir: " + zapInterface.getHomeDir());
-                System.out.println("my action host: " + zapInterface.getHost());
-                System.out.println("my action port: " + zapInterface.getPort());
-                System.out.println("my action auto install: " + zapInterface.getAutoInstall());
-                System.out.println("my action install dir: " + zapInterface.getInstallationEnvVar());
-                System.out.println("my action tool used: " + zapInterface.getToolUsed());
-                System.out.println("my action session file path: " + zapInterface.getSessionFilePath());
-                
-                System.out.println("my action command line args extra: " + zapInterface.getCommandLineArgs().size());
-                System.out.println("----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ");
-                for (int i = 0; i < zapInterface.getCommandLineArgs().size(); i++) {
-                    System.out.println(zapInterface.getCommandLineArgs().get(i));
-                }
                 this.management.setBuildStatus(zapInterface.getBuildStatus());
-                this.management.setTimeout(zapInterface.getTimeout());
                 this.management.setHomeDir(zapInterface.getHomeDir());
                 this.management.setHost(zapInterface.getHost());
                 this.management.setPort(zapInterface.getPort());
-                this.management.setInstallationEnvVar(zapInterface.getInstallationEnvVar());
                 this.management.setAutoInstall(zapInterface.getAutoInstall());
                 this.management.setToolUsed(zapInterface.getToolUsed());
+                this.management.setInstallationEnvVar(zapInterface.getInstallationEnvVar());
+                this.management.setTimeout(zapInterface.getTimeout());
                 this.management.setCommandLineArgs(zapInterface.getCommandLineArgs());
             }
         }
@@ -134,18 +99,12 @@ public class ZAPManagementBuilder extends Recorder {
         }
         try {
             Utils.lineBreak(listener);
-            Utils.loggerMessage(listener, 0, "[{0}] START BUILD STEP", Utils.ZAP);
+            Utils.loggerMessage(listener, 0, "[{0}] START POST-BUILD MANAGEMENT STEP", Utils.ZAP);
             Utils.lineBreak(listener);
-            listener.getLogger().println("management: " + management);
-            listener.getLogger().println("build: " + build);
-            listener.getLogger().println("listener: " + listener);
-            listener.getLogger().println("launcher: " + launcher);
             
             proc = management.startZAP(build, listener, launcher);
-            listener.getLogger().println("after proc assignment");
         }
         catch (Exception e) {
-            listener.getLogger().println("we failed");
             e.printStackTrace();
             listener.error(ExceptionUtils.getStackTrace(e));
             return false;
@@ -165,18 +124,9 @@ public class ZAPManagementBuilder extends Recorder {
             listener.error(ExceptionUtils.getStackTrace(e));
             return false;
         }
-        // EnvVars abc = build.getEnvironment(listener);
-        // printMap(abc);
         return res;
     }
-    private void printMap(Map mp) {
-        Iterator it = mp.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry pair = (Map.Entry) it.next();
-            System.out.println(pair.getKey() + " = " + pair.getValue());
-            it.remove(); // avoids a ConcurrentModificationException
-        }
-    }
+
     @Extension
     public static final class ZAPManagementBuilderDescriptorImpl extends BuildStepDescriptor<Publisher> {
 

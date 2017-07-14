@@ -7,7 +7,6 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -20,21 +19,27 @@ import hudson.tools.ToolDescriptor;
 import hudson.tools.ToolInstallation;
 import jenkins.model.Jenkins;
 
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.zaproxy.clientapi.core.ApiResponseList;
-import org.zaproxy.clientapi.core.ApiResponseSet;
-import org.zaproxy.clientapi.core.ClientApi;
-import org.zaproxy.clientapi.core.ClientApiException;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.tools.ant.BuildException;
 import org.jenkinsci.remoting.RoleChecker;
 
 import hudson.EnvVars;
-import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.Proc;
 import hudson.FilePath.FileCallable;
+
+/**
+ *
+ * @author Goran Sarenkapa
+ * @author Mostafa AbdelMoez
+ * @author Tanguy de Lignières
+ * @author Abdellah Azougarh
+ * @author Thilina Madhusanka
+ * @author Johann Ollivier-Lapeyre
+ * @author Ludovic Roucoux
+ *
+ */
 
 public class ZAP extends AbstractDescribableImpl<ZAP> implements Serializable {
 
@@ -67,19 +72,18 @@ public class ZAP extends AbstractDescribableImpl<ZAP> implements Serializable {
     private static final String ZAP_PROG_NAME_BAT = "zap.bat";
     private static final String ZAP_PROG_NAME_SH = "zap.sh";
 
-    public ZAP(AbstractBuild<?, ?> build, BuildListener listener, Launcher launcher,
-            int timeout, String installationEnvVar, String homeDir,
-            String host, int port, boolean autoInstall, String toolUsed, ArrayList<ZAPCmdLine> commandLineArgs) throws IOException, InterruptedException {
+    public ZAP(AbstractBuild<?, ?> build, BuildListener listener, Launcher launcher, String homeDir,
+            String host, int port, boolean autoInstall, String toolUsed, String installationEnvVar, int timeout, ArrayList<ZAPCmdLine> commandLineArgs) throws IOException, InterruptedException {
         this.build = build;
         this.listener = listener;
         this.launcher = launcher;
-        this.timeout = timeout;
-        this.installationEnvVar = installationEnvVar;
         this.homeDir = homeDir;
         this.host = host;
         this.port = port;
         this.autoInstall = autoInstall;
         this.toolUsed = toolUsed;
+        this.installationEnvVar = installationEnvVar;
+        this.timeout = timeout;
         this.commandLineArgs = commandLineArgs;
         this.envVars = build.getEnvironment(listener);;
         System.out.println(this.toString());
@@ -243,14 +247,9 @@ public class ZAP extends AbstractDescribableImpl<ZAP> implements Serializable {
     public Proc launch () throws IOException, InterruptedException {
         FilePath workDir = new FilePath(getWorkspace().getChannel(), getInstallationDir());
 
-        System.out.println();
-        printMap(getEnvVars());
-        System.out.println();
-
         Utils.loggerMessage(listener, 0, "[{0}] EXECUTE LAUNCH COMMAND", Utils.ZAP);
         Proc proc = launcher.launch().cmds(getCommand()).envs(envVars).stdout(listener).pwd(workDir).start();
 
-        /* Call waitForSuccessfulConnectionToZap(int, BuildListener) remotely */
         Utils.lineBreak(listener);
         Utils.loggerMessage(listener, 0, "[{0}] INITIALIZATION [ START ]", Utils.ZAP);
         build.getWorkspace().act(new WaitZAPInitCallable(listener, this));
@@ -261,17 +260,7 @@ public class ZAP extends AbstractDescribableImpl<ZAP> implements Serializable {
 
     }
 
-    private void printMap(Map mp) {
-        Iterator it = mp.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry pair = (Map.Entry) it.next();
-            System.out.println(pair.getKey() + " = " + pair.getValue());
-            it.remove(); // avoids a ConcurrentModificationException
-        }
-    }
-
     private void waitForSuccessfulConnectionToZap(BuildListener listener) {
-        Utils.loggerMessage(listener, 0, "[{0}] timeout is [ SUCCESSFUL ]", Integer.toString(timeout));
         int timeoutInMs = (int) TimeUnit.SECONDS.toMillis(timeout);
         int connectionTimeoutInMs = timeoutInMs;
         int pollingIntervalInMs = (int) TimeUnit.SECONDS.toMillis(1);

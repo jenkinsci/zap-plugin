@@ -270,7 +270,6 @@ public class ZAPBuilder extends Builder {
     /** Method called when the build is launching */
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) {
-        listener.getLogger().println("zaproxy: " + zaproxy);
         if (!startZAPFirst) try {
             Utils.lineBreak(listener);
             Utils.loggerMessage(listener, 0, "[{0}] START BUILD STEP", Utils.ZAP);
@@ -291,7 +290,7 @@ public class ZAPBuilder extends Builder {
             }
 
             res = build.getWorkspace().act(new ZAPDriverCallable(listener, this.zaproxy));
-            proc.joinWithTimeout(60L, TimeUnit.MINUTES, listener);
+            proc.joinWithTimeout(60L, TimeUnit.MINUTES, listener); /* 1 HOUR TO END PROPERLY */
             Utils.lineBreak(listener);
             Utils.lineBreak(listener);
             Utils.loggerMessage(listener, 0, "[{0}] SHUTDOWN [ SUCCESSFUL ]", Utils.ZAP);
@@ -346,6 +345,7 @@ public class ZAPBuilder extends Builder {
         zapInterface.setAutoInstall(zaproxy.getAutoInstall());
         zapInterface.setToolUsed(zaproxy.getToolUsed());
         zapInterface.setInstallationEnvVar(zaproxy.getZapHome());
+        zapInterface.setTimeout(zaproxy.getTimeout());
         //zapInterface.setSessionFilePath(zaproxy.getSessionFilePath());
         zapInterface.setCommandLineArgs(zaproxy.getEvaluatedCmdLinesZap());
         return res;

@@ -24,38 +24,22 @@
 
 package org.jenkinsci.plugins.zap;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.SocketTimeoutException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
 import hudson.model.*;
-import hudson.remoting.VirtualChannel;
-import hudson.slaves.SlaveComputer;
-import jenkins.model.Jenkins;
-
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.zaproxy.clientapi.core.ApiResponseList;
 import org.zaproxy.clientapi.core.ApiResponseSet;
 import org.zaproxy.clientapi.core.ClientApi;
 import org.zaproxy.clientapi.core.ClientApiException;
 import org.apache.commons.lang.exception.ExceptionUtils;
-import org.apache.tools.ant.BuildException;
-import org.jenkinsci.remoting.RoleChecker;
-
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.Proc;
-import hudson.FilePath.FileCallable;
 
 /**
  * Contains methods to start and execute ZAPZAPManagement. Members variables are
@@ -79,10 +63,6 @@ public class ZAPManagement extends AbstractDescribableImpl<ZAPManagement> implem
 
     private static final long serialVersionUID = 1L;
     private static final String API_KEY = "ZAPROXY-PLUGIN";
-
-    /* ZAP executable files */
-    private static final String ZAP_PROG_NAME_BAT = "zap.bat";
-    private static final String ZAP_PROG_NAME_SH = "zap.sh";
 
     @DataBoundConstructor
     public ZAPManagement(boolean buildThresholds, int hThresholdValue, int hSoftValue, int mThresholdValue,
@@ -112,100 +92,46 @@ public class ZAPManagement extends AbstractDescribableImpl<ZAPManagement> implem
         return s;
     }
 
-    public Proc startZAP(AbstractBuild<?, ?> build, BuildListener listener, Launcher launcher) throws IllegalArgumentException, IOException, InterruptedException {
-        System.out.println("");
-        System.out.println("INITIATING POST BUILD");
-        System.out.println("");
-        System.out.println("");
+    public Proc startZAP(AbstractBuild<?, ?> build, BuildListener listener, Launcher launcher)
+            throws IllegalArgumentException, IOException, InterruptedException {
 
-        if (this.buildStatus == false){
+        if (this.buildStatus == false) {
             Utils.loggerMessage(listener, 0, "[{0}] WE GOT FALSE SO WE BREAK", Utils.ZAP);
             System.out.println("WE GOT FALSE SO WE BREAK");
             return null;
         }
-        System.out.println("WE GOT TRUE SO WE INIT");
-        ZAP zap = new ZAP(build, listener, launcher, this.getTimeout(), this.getInstallationEnvVar(), this.getHomeDir(), this.getHost(), this.getPort(), this.getAutoInstall(), this.getToolUsed(), this.getCommandLineArgs());
-
+        ZAP zap = new ZAP(build, listener, launcher, this.getHomeDir(), this.getHost(), this.getPort(),
+                this.getAutoInstall(), this.getToolUsed(), this.getInstallationEnvVar(), this.getTimeout(),
+                this.getCommandLineArgs());
         this.zapInstallationDir = zap.getInstallationDir();
         zap.checkParams(this.zapInstallationDir);
 
-        System.out.println("startZAP list -------------");
-        for(int i = 0; i < this.getCommandLineArgs().size(); i++) {
-            System.out.println(this.getCommandLineArgs().get(i));
-        }
-        
+        // System.out.println("startZAP list -------------");
+        // for (int i = 0; i < this.getCommandLineArgs().size(); i++) {
+        // System.out.println(this.getCommandLineArgs().get(i));
+        // }
+
         /* Command to start ZAProxy with parameters */
         zap.setCommand();
 
-        System.out.println("new list -------------");
-        for(int i = 0; i < zap.getCommand().size(); i++) {
-            //System.out.println(zap.getCommand().get(i));
-        }
+        // System.out.println("new list -------------");
+        // for (int i = 0; i < zap.getCommand().size(); i++) {
+        // // System.out.println(zap.getCommand().get(i));
+        // }
 
         EnvVars envVars = build.getEnvironment(listener);
-        
-        System.out.println("");
-        System.out.println("");
-        System.out.println("BEFORE SETTING JDK");
+
+        // System.out.println("");
+        // System.out.println("");
+        // System.out.println("BEFORE SETTING JDK");
         zap.setBuildJDK();
 
-        /*
-         * Launch ZAP process on remote machine (on master if no remote machine)
-         */
-//        Utils.loggerMessage(listener, 0, "[{0}] EXECUTE LAUNCH COMMAND", Utils.ZAP);
-//        Proc proc = launcher.launch().cmds(zap.getCommand()).envs(envVars).stdout(listener).pwd(workDir).start();
-//
-//        /* Call waitForSuccessfulConnectionToZap(int, BuildListener) remotely */
-//        Utils.lineBreak(listener);
-//        Utils.loggerMessage(listener, 0, "[{0}] INITIALIZATION [ START ]", Utils.ZAP);
-//        build.getWorkspace().act(new WaitZAPManagementInitCallable(listener, this));
-//        Utils.lineBreak(listener);
-//        Utils.loggerMessage(listener, 0, "[{0}] INITIALIZATION [ SUCCESSFUL ]", Utils.ZAP);
-//        Utils.lineBreak(listener);
-//        return proc;
-        return zap.launch();
+        return zap.launch(); // Launch ZAP process on remote machine (on master
+                             // if no remote machine)
     }
- 
-    /**
-     * Wait for ZAP's initialization such that it is ready to use at the end of
-     * the method, otherwise catch the exception. If there is a remote machine,
-     * then this method will be launched there.
-     *
-     * @param listener
-     *            of type BuildListener: the display log listener during the
-     *            Jenkins job execution.
-     * @param timeout
-     *            of type int: the time in seconds to try to connect to ZAP.
-     * @see <a href=
-     *      "https://groups.google.com/forum/#!topic/zaproxy-develop/gZxYp8Og960">
-     *      [JAVA] Avoid sleep to wait ZAProxy initialization</a>
-     */
 
-
-    /**
-     * Execute ZAPDriver method following build's setup and stop ZAP at the end.
-     * Note: No param's to executeZAP method since they would also need to be
-     * accessible in Builder, somewhat redundant.
-     *
-     * @param listener
-     *            of type BuildListener: the display log listener during the
-     *            Jenkins job execution.
-     * @param workspace
-     *            of type FilePath: a {@link FilePath} representing the build's
-     *            workspace.
-     * @return of type: boolean DESC: true if no exception is caught, false
-     *         otherwise.
-     */
     public boolean executeZAP(BuildListener listener, FilePath workspace) {
-        listener.getLogger().println("executeZAP");
         boolean buildSuccess = true;
-
-        /*
-         * Check to make sure that plugin's are installed with ZAP if they are
-         * selected in the UI.
-         */
-        listener.getLogger().println("host: " + host);
-        listener.getLogger().println("port: " + port);
         ClientApi clientApi = new ClientApi(host, port, API_KEY);
 
         try {
@@ -524,38 +450,10 @@ public class ZAPManagement extends AbstractDescribableImpl<ZAPManagement> implem
     private boolean autoInstall;
     private String toolUsed;
     public String sessionFilePath;
-    public  boolean autoLoadSession;
+    public boolean autoLoadSession;
 
     public void setBuildStatus(boolean buildStatus) {
         this.buildStatus = buildStatus;
-    }
-
-    public boolean getAutoInstall(){return this.autoInstall;}
-
-    public void setAutoInstall(boolean autoInstall) {
-        this.autoInstall = autoInstall;
-    }
-
-    private String getToolUsed(){return  this.toolUsed;}
-
-    public void setToolUsed(String toolUsed) {
-        this.toolUsed = toolUsed;
-    }
-
-    private int getTimeout() {
-        return this.timeout;
-    }
-
-    public void setTimeout(int timeout) {
-        this.timeout = timeout;
-    }
-
-    private String getInstallationEnvVar() {
-        return this.installationEnvVar;
-    }
-
-    public void setInstallationEnvVar(String installationEnvVar) {
-        this.installationEnvVar = installationEnvVar;
     }
 
     private String getHomeDir() {
@@ -569,7 +467,7 @@ public class ZAPManagement extends AbstractDescribableImpl<ZAPManagement> implem
     public String getHost() {
         return this.host;
     }
-    
+
     public void setHost(String host) {
         this.host = host;
     }
@@ -577,14 +475,50 @@ public class ZAPManagement extends AbstractDescribableImpl<ZAPManagement> implem
     public int getPort() {
         return this.port;
     }
-    
+
     public void setPort(int port) {
         this.port = port;
     }
 
+    public boolean getAutoInstall() {
+        return this.autoInstall;
+    }
+
+    public void setAutoInstall(boolean autoInstall) {
+        this.autoInstall = autoInstall;
+    }
+
+    private String getToolUsed() {
+        return this.toolUsed;
+    }
+
+    public void setToolUsed(String toolUsed) {
+        this.toolUsed = toolUsed;
+    }
+
+    private String getInstallationEnvVar() {
+        return this.installationEnvVar;
+    }
+
+    public void setInstallationEnvVar(String installationEnvVar) {
+        this.installationEnvVar = installationEnvVar;
+    }
+
+    private int getTimeout() {
+        return this.timeout;
+    }
+
+    public void setTimeout(int timeout) {
+        this.timeout = timeout;
+    }
+
     private ArrayList<ZAPCmdLine> commandLineArgs; /* List of all ZAP command lines specified by the user ArrayList because it needs to be Serializable (whereas List is not Serializable). */
 
-    public ArrayList<ZAPCmdLine> getCommandLineArgs() { return commandLineArgs; }
+    public ArrayList<ZAPCmdLine> getCommandLineArgs() {
+        return commandLineArgs;
+    }
 
-    public void setCommandLineArgs(ArrayList<ZAPCmdLine> commandLineArgs) { this.commandLineArgs = commandLineArgs; }
+    public void setCommandLineArgs(ArrayList<ZAPCmdLine> commandLineArgs) {
+        this.commandLineArgs = commandLineArgs;
+    }
 }
