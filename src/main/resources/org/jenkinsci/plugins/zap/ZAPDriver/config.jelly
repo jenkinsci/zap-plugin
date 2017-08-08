@@ -101,76 +101,90 @@ SOFTWARE.
   </f:radioBlock>
 
   <f:section title="${%jenkins.jobconfig.zap.session.properties.section.label}">
-    <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.contextname.textbox.label}" field="contextName">
-      <f:textbox clazz="required" />
-    </f:entry>
+    <f:radioBlock title="${%jenkins.jobconfig.zap.session.properties.context.load.radioblock.label}" name="autoLoadContext" value="true" checked="${instance.autoLoadContext == true}" inline="true">
+      <f:entry title=""></f:entry>
+      <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.loadcontext.dropdownlist.label}" field="loadContext">
+        <f:select />
+      </f:entry>
+    </f:radioBlock>
+    <f:radioBlock title="${%jenkins.jobconfig.zap.session.properties.context.persist.radioblock.label}" name="autoLoadContext" value="false" checked="${instance == null || instance.autoLoadContext == false || instance.autoLoadContext == null}" inline="true">
+      <f:entry title=""></f:entry>
+      <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.contextname.textbox.label}" field="contextName">
+        <f:textbox clazz="required" />
+      </f:entry>
 
-    <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.includeincontext.textarea.label}" field="includedURL">
-      <f:textarea />
-    </f:entry>
+      <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.includeincontext.textarea.label}" field="includedURL">
+        <f:textarea />
+      </f:entry>
 
-    <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.excludefromcontext.textarea.label}" field="excludedURL">
-      <f:textarea />
-    </f:entry>
+      <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.excludefromcontext.textarea.label}" field="excludedURL">
+        <f:textarea />
+      </f:entry>
 
     
-    <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.alertfilters.dropdownlist.label}" field="alertFilters">
-      <f:select />
-    </f:entry>
+      <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.alertfilters.dropdownlist.label}" field="alertFilters">
+        <f:select />
+      </f:entry>
 
-    <f:entry>
-      <f:optionalBlock title="${%jenkins.jobconfig.zap.session.properties.context.authentication.checkbox.label}" field="authMode" inline="true">
-        <f:entry>
-          <table width="100%">
-            <f:entry title="------------------------------------------------------------"></f:entry>
-            <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.authentication.username.textbox.label}" field="username">
-              <f:textbox clazz="required" />
-            </f:entry>
-            <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.authentication.password.textbox.label}" field="password">
-              <f:password clazz="required" />
-            </f:entry>
-            <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.authentication.loggedinindicator.textbox.label}" field="loggedInIndicator">
-              <f:textbox clazz="required" />
-            </f:entry>
-            <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.authentication.loggedoutindicator.textbox.label}" field="loggedOutIndicator">
-              <f:textbox />
-            </f:entry>
 
-            <f:entry title="------------------------------------------------------------"></f:entry>
-            <f:radioBlock title="${%jenkins.jobconfig.zap.session.properties.context.authentication.form-based.radioblock.label}" name="authMethod" value="FORM_BASED" checked="${instance == null || instance.isAuthMethod('FORM_BASED')}" inline="true">
-              <f:nested>
-                <f:entry title=""></f:entry>
-                <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.authentication.form-based.targeturl.textbox.label}" field="loginURL">
-                  <f:textbox clazz="required" />
-                </f:entry>
-                <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.authentication.form-based.usernameparam.textbox.label}" field="usernameParameter">
-                  <f:textbox clazz="required" />
-                </f:entry>
-                <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.authentication.form-based.passwordparam.textbox.label}" field="passwordParameter">
-                  <f:textbox clazz="required" />
-                </f:entry>
-                <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.authentication.form-based.extrapostdata.textbox.label}" field="extraPostData">
-                  <f:textbox />
-                </f:entry>
-              </f:nested>
-            </f:radioBlock>
+      <f:entry>
+        <f:block>
+          <table>
+            <f:optionalBlock title="${%jenkins.jobconfig.zap.session.properties.context.authentication.checkbox.label}" field="authMode" inline="true">
+              <f:entry>
+                <table width="100%">
+                  <f:entry title="------------------------------------------------------------"></f:entry>
+                  <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.authentication.username.textbox.label}" field="username">
+                    <f:textbox clazz="required" />
+                  </f:entry>
+                  <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.authentication.password.textbox.label}" field="password">
+                    <f:password clazz="required" />
+                  </f:entry>
+                  <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.authentication.loggedinindicator.textbox.label}" field="loggedInIndicator">
+                    <f:textbox clazz="required" />
+                  </f:entry>
+                  <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.authentication.loggedoutindicator.textbox.label}" field="loggedOutIndicator">
+                    <f:textbox />
+                  </f:entry>
 
-            <f:radioBlock title="${%jenkins.jobconfig.zap.session.properties.context.authentication.script-based.radioblock.label}" name="authMethod" value="SCRIPT_BASED" checked="${instance.isAuthMethod('SCRIPT_BASED')}" inline="true">
-              <f:nested>
-                <f:entry title=""></f:entry>
-                <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.authentication.script-based.filename.dropdownlist.label}" field="authScript">
-                  <f:select />
-                </f:entry>
-                <f:block>
-                  <f:repeatableProperty field="authScriptParams" add="${%jenkins.jobconfig.zap.session.properties.context.authentication.script-based.addparam.button}"/>
-                </f:block>
-              </f:nested>
-            </f:radioBlock>
-            <f:entry title="------------------------------------------------------------"></f:entry>
+                  <f:entry title="------------------------------------------------------------"></f:entry>
+                  <f:radioBlock title="${%jenkins.jobconfig.zap.session.properties.context.authentication.form-based.radioblock.label}" name="authMethod" value="FORM_BASED" checked="${instance == null || instance.isAuthMethod('FORM_BASED')}" inline="true">
+                    <f:nested>
+                      <f:entry title=""></f:entry>
+                      <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.authentication.form-based.targeturl.textbox.label}" field="loginURL">
+                        <f:textbox clazz="required" />
+                      </f:entry>
+                      <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.authentication.form-based.usernameparam.textbox.label}" field="usernameParameter">
+                        <f:textbox clazz="required" />
+                      </f:entry>
+                      <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.authentication.form-based.passwordparam.textbox.label}" field="passwordParameter">
+                        <f:textbox clazz="required" />
+                      </f:entry>
+                      <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.authentication.form-based.extrapostdata.textbox.label}" field="extraPostData">
+                        <f:textbox />
+                      </f:entry>
+                    </f:nested>
+                  </f:radioBlock>
+
+                  <f:radioBlock title="${%jenkins.jobconfig.zap.session.properties.context.authentication.script-based.radioblock.label}" name="authMethod" value="SCRIPT_BASED" checked="${instance.isAuthMethod('SCRIPT_BASED')}" inline="true">
+                    <f:nested>
+                      <f:entry title=""></f:entry>
+                      <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.authentication.script-based.filename.dropdownlist.label}" field="authScript">
+                        <f:select />
+                      </f:entry>
+                      <f:block>
+                        <f:repeatableProperty field="authScriptParams" add="${%jenkins.jobconfig.zap.session.properties.context.authentication.script-based.addparam.button}"/>
+                      </f:block>
+                    </f:nested>
+                  </f:radioBlock>
+                  <f:entry title="------------------------------------------------------------"></f:entry>
+                </table>
+              </f:entry>
+            </f:optionalBlock>
           </table>
-        </f:entry>
-      </f:optionalBlock>
-    </f:entry>
+        </f:block>
+      </f:entry>
+    </f:radioBlock>
   </f:section>
 
   <f:section title="${%jenkins.jobconfig.zap.attackmode.section.label}">
