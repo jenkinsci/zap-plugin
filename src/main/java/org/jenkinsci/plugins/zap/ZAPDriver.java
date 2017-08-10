@@ -1261,7 +1261,8 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                  /* POST BUILD STEP */
                 Utils.lineBreak(listener);
                 Utils.loggerMessage(listener, 0, "[{0}] MANAGE POST-BUILD THRESHOLD(S) ENABLED [ {1} ]", Utils.ZAP, String.valueOf(this.buildThresholds).toUpperCase());
-                if(this.buildThresholds) buildStatus = ManageThreshold(listener, clientApi, this.hThresholdValue, this.hSoftValue, this.mThresholdValue, this.mSoftValue, this.lThresholdValue, this.lSoftValue, this.iThresholdValue, this.iSoftValue, this.cumulValue);
+                if(this.buildThresholds) buildStatus = 
+                    (listener, clientApi, this.hThresholdValue, this.hSoftValue, this.mThresholdValue, this.mSoftValue, this.lThresholdValue, this.lSoftValue, this.iThresholdValue, this.iSoftValue, this.cumulValue);
 
             }
         }
@@ -2185,18 +2186,16 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
         int nbAlertInfo =countAlertbySeverity(clientApi, "Informational");
         Utils.loggerMessage(listener, 1, "ALERTS Informational COUNT [ {1} ]", Utils.ZAP, Integer.toString(nbAlertInfo));
-        int count = 0;
 
         int hScale = computeProduct(hThresholdValue,nbAlertHigh);
         int mScale = computeProduct(mThresholdValue,nbAlertMedium);
         int lScale = computeProduct(lThresholdValue,nbAlertLow);
         int iScale = computeProduct(iThresholdValue,nbAlertInfo);
 
-        if((hScale > hSoftValue) || (mScale > mSoftValue) || (lScale > lSoftValue ) || (iScale > iSoftValue)){count++;}
-        if((hScale+mScale+lScale+iScale)> cumulValue){count++;}
-
-        if(count==1){buildStatus = Result.UNSTABLE;}
-        if(count==2){buildStatus = Result.FAILURE;}
+        if((mScale > mSoftValue) || (lScale > lSoftValue ) || (iScale > iSoftValue)){
+            buildStatus = Result.UNSTABLE;
+            if((hScale > hSoftValue) || (hScale+mScale+lScale+iScale)> cumulValue){buildStatus = Result.FAILURE;}
+        }
 
         Utils.loggerMessage(listener, 0, "END : COMPUTING THRESHOLD", Utils.ZAP);
 
