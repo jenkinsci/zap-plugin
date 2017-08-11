@@ -2192,11 +2192,10 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         int lScale = computeProduct(lThresholdValue,nbAlertLow);
         int iScale = computeProduct(iThresholdValue,nbAlertInfo);
 
-        if((mScale > mSoftValue) || (lScale > lSoftValue ) || (iScale > iSoftValue)){
-            buildStatus = Result.UNSTABLE;
-            if((hScale > hSoftValue) || (hScale+mScale+lScale+iScale)> cumulValue){buildStatus = Result.FAILURE;}
-        }
-
+        if((mScale > mSoftValue) || (lScale > lSoftValue ) || (iScale > iSoftValue)){buildStatus = Result.UNSTABLE;}
+        
+        if((hScale > hSoftValue) || (hScale+mScale+lScale+iScale)> cumulValue)){buildStatus = Result.FAILURE;}
+       
         Utils.loggerMessage(listener, 0, "END : COMPUTING THRESHOLD", Utils.ZAP);
 
         return  buildStatus;
