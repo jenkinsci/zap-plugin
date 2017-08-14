@@ -270,6 +270,7 @@ public class ZAPBuilder extends Builder {
     /** Method called when the build is launching */
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) {
+        listener.getLogger().println("zaproxy: " + zaproxy);
         if (!startZAPFirst) try {
             Utils.lineBreak(listener);
             Utils.loggerMessage(listener, 0, "[{0}] START BUILD STEP", Utils.ZAP);
@@ -334,6 +335,16 @@ public class ZAPBuilder extends Builder {
             listener.error(ExceptionUtils.getStackTrace(e));
             return false;
         }
+
+        build.addAction(new ZAPInterfaceAction());
+        ZAPInterfaceAction zapInterface = build.getAction(ZAPInterfaceAction.class);
+        zapInterface.setBuildStatus(true);
+        zapInterface.setInstallationEnvVar(zaproxy.getZapHome());
+        zapInterface.setHomeDir(zaproxy.getZapSettingsDir());
+        zapInterface.setTimeout(zaproxy.getTimeout());
+        zapInterface.setHost(zaproxy.getEvaluatedZapHost());
+        zapInterface.setPort(zaproxy.getEvaluatedZapPort());
+        zapInterface.setCommandLineArgs(zaproxy.getEvaluatedCmdLinesZap());
         return res;
     }
 

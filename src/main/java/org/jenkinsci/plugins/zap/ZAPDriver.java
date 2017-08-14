@@ -86,6 +86,7 @@ import hudson.model.Descriptor;
 import hudson.model.EnvironmentSpecific;
 import hudson.model.JDK;
 import hudson.model.Node;
+import hudson.model.Result;
 import hudson.remoting.VirtualChannel;
 import hudson.slaves.NodeSpecific;
 import hudson.slaves.SlaveComputer;
@@ -632,7 +633,8 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         cmd.add(CMD_LINE_API_KEY + "=" + API_KEY);
 
         /* Set the default directory used by ZAP if it's defined and if a scan is provided */
-        if (this.activeScanURL && this.zapSettingsDir != null && !this.zapSettingsDir.isEmpty()) {
+        //if (this.activeScanURL && this.zapSettingsDir != null && !this.zapSettingsDir.isEmpty()) {
+        if (this.zapSettingsDir != null && !this.zapSettingsDir.isEmpty()) {
             cmd.add(CMD_LINE_DIR);
             cmd.add(this.zapSettingsDir);
         }
@@ -1248,6 +1250,23 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         }
         Utils.lineBreak(listener);
         return buildSuccess;
+    }
+
+    public Result executeZAPPostBuild(BuildListener listener, FilePath workspace) {
+        Result buildStatus = Result.SUCCESS;
+        ClientApi clientApi = new ClientApi(this.evaluatedZapHost, this.evaluatedZapPort, API_KEY);
+        Utils.lineBreak(listener);
+//        Utils.loggerMessage(listener, 0, "[{0}] MANAGE POST-BUILD THRESHOLD(S) ENABLED [ {1} ]", Utils.ZAP, String.valueOf(this.buildThresholds).toUpperCase());
+//        if(this.buildThresholds) try {
+//            buildStatus = ManageThreshold(listener, clientApi, this.hThresholdValue, this.hSoftValue, this.mThresholdValue, this.mSoftValue, this.lThresholdValue, this.lSoftValue, this.iThresholdValue, this.iSoftValue, this.cumulValue);
+//        } catch (ClientApiException e) {
+//            e.printStackTrace();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+
+        return buildStatus;
+
     }
 
     /**
@@ -2786,11 +2805,11 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
     private final ArrayList<ZAPCmdLine> cmdLinesZAP; /* List of all ZAP command lines specified by the user ArrayList because it needs to be Serializable (whereas List is not Serializable). */
 
-    public List<ZAPCmdLine> getCmdLinesZAP() { return cmdLinesZAP; }
+    public ArrayList<ZAPCmdLine> getCmdLinesZAP() { return cmdLinesZAP; }
 
     private ArrayList<ZAPCmdLine> evaluatedCmdLinesZap; /* Todo */
 
-    public List<ZAPCmdLine> getEvaluatedCmdLinesZap() { return evaluatedCmdLinesZap; }
+    public ArrayList<ZAPCmdLine> getEvaluatedCmdLinesZap() { return evaluatedCmdLinesZap; }
 
     public void setEvaluatedCmdLinesZap(ArrayList<ZAPCmdLine> evaluatedCmdLinesZap) { this.evaluatedCmdLinesZap = evaluatedCmdLinesZap; }
 

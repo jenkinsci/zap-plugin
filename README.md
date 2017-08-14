@@ -58,6 +58,7 @@ You can also:
 * If you find any security vulnerabilities or exploits caused by the plugin, please send a private email to one of the <b>[maintainer(s)](https://wiki.jenkins-ci.org/display/JENKINS/zap+plugin#zapplugin-PluginInformation)</b>.
 * <b>Notice</b>: These should be kept private until a fix is issued.
 
+<<<<<<< HEAD
 ### Latest Release - Version 1.1.0 (July 10, 2017)
 
 * <img src="https://wiki.jenkins.io/s/en_GB/6441/82994790ee2f720a5ec8daf4850ac5b7b34d2194/_/images/icons/emoticons/add.png" alt="add"> <b>[ <a href="https://issues.jenkins-ci.org/browse/JENKINS-39985">JENKINS-39985</a> ]</b> Added support for context Alert Filters.
@@ -75,6 +76,37 @@ You can also:
   * Created the webapp folder
   * Established clearer distinction between the ZAP Installation Directory and ZAP Home Directory
 * <img src="https://wiki.jenkins.io/s/en_GB/6441/82994790ee2f720a5ec8daf4850ac5b7b34d2194/_/images/icons/emoticons/information.png" alt="info"> Updated LICENSE and README information.
+=======
+### Version History
+
+<dl>
+  <dt>Latest Release - Version 1.1.0 (July 10, 2017)</dt>
+  <dd><img src="https://wiki.jenkins.io/s/en_GB/6441/82994790ee2f720a5ec8daf4850ac5b7b34d2194/_/images/icons/emoticons/add.png" alt="add"> <b><a href="https://issues.jenkins-ci.org/browse/JENKINS-39985">[ JENKINS-39985 ]</a></b> Added support for context Alert Filters.</dd>
+  <dd><img src="https://wiki.jenkins.io/s/en_GB/6441/82994790ee2f720a5ec8daf4850ac5b7b34d2194/_/images/icons/emoticons/add.png" alt="add"> <b><a href="https://issues.jenkins-ci.org/browse/JENKINS-43554">[ JENKINS-43554 ]</a></b> Added support for the internationalization of:
+    <ol>
+      <li>UI Elements</li>
+      <li>Associated Help Doc's</li>
+    </ol>
+  </dd>
+  <dd><img src="https://wiki.jenkins.io/s/en_GB/6441/82994790ee2f720a5ec8daf4850ac5b7b34d2194/_/images/icons/emoticons/warning.png" alt="warning"> <b><a href="https://issues.jenkins-ci.org/browse/JENKINS-43483">[ JENKINS-43483 ]</a></b> Added support to the authentication module to be able to utilize Logged Out Indicators.</dd>
+  <dd><img src="https://wiki.jenkins.io/s/en_GB/6441/82994790ee2f720a5ec8daf4850ac5b7b34d2194/_/images/icons/emoticons/forbidden.png" alt="remove"> <b><a href="https://issues.jenkins-ci.org/browse/JENKINS-43384">[ JENKINS-43384 ]</a></b> Removed support from the ZAP Settings Variable for System Environment Variables, Build Variables as well as Environment Inject Plugin Variables since the Job Configuration page is ONLY run on the master and has no access to the slave.</dd>
+  <dd><img src="https://wiki.jenkins.io/s/en_GB/6441/82994790ee2f720a5ec8daf4850ac5b7b34d2194/_/images/icons/emoticons/error.png" alt="bugfix"> Bug-fixes:
+    <ol>
+      <li>Fixed Broken links in Help Files</li>
+      <li>Fixed misused variables (evaluatedSessionFilename instead of evaluatedZapSettingsDir) of <i>ZAPDriver.java</i></li>
+      <li>Correct improper use of JIRA Extension parameters.</li>
+    </ol>
+  </dd>
+  <dd><img src="https://wiki.jenkins.io/s/en_GB/6441/82994790ee2f720a5ec8daf4850ac5b7b34d2194/_/images/icons/emoticons/information.png" alt="info"> Usability Improvements:
+    <ul>
+      <li>Updated all affected help files</li>
+      <li>Created the webapp folder</li>
+      <li>Established clearer distinction between the ZAP Installation Directory and ZAP Home Directory</li>
+    </ul>
+  </dd>
+  <dd><img src="https://wiki.jenkins.io/s/en_GB/6441/82994790ee2f720a5ec8daf4850ac5b7b34d2194/_/images/icons/emoticons/information.png" alt="info"> Updated LICENSE and README information.</dd>
+</dl>
+>>>>>>> 73d5c4e9c727e77a3cfd6cefe5eaefe8e3291dc6
 
 See <b>[Full Version History](https://wiki.jenkins.io/display/JENKINS/Version+History)</b>
 
