@@ -1261,8 +1261,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                  /* POST BUILD STEP */
                 Utils.lineBreak(listener);
                 Utils.loggerMessage(listener, 0, "[{0}] MANAGE POST-BUILD THRESHOLD(S) ENABLED [ {1} ]", Utils.ZAP, String.valueOf(this.buildThresholds).toUpperCase());
-                if(this.buildThresholds) buildStatus = 
-                    (listener, clientApi, this.hThresholdValue, this.hSoftValue, this.mThresholdValue, this.mSoftValue, this.lThresholdValue, this.lSoftValue, this.iThresholdValue, this.iSoftValue, this.cumulValue);
+                if(this.buildThresholds) buildStatus = ManageThreshold(listener, clientApi, this.hThresholdValue, this.hSoftValue, this.mThresholdValue, this.mSoftValue, this.lThresholdValue, this.lSoftValue, this.iThresholdValue, this.iSoftValue, this.cumulValue);
 
             }
         }
