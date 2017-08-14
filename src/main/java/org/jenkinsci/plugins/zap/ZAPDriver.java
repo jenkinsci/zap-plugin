@@ -86,6 +86,7 @@ import hudson.model.Descriptor;
 import hudson.model.EnvironmentSpecific;
 import hudson.model.JDK;
 import hudson.model.Node;
+import hudson.model.Result;
 import hudson.remoting.VirtualChannel;
 import hudson.slaves.NodeSpecific;
 import hudson.slaves.SlaveComputer;
@@ -178,6 +179,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
             boolean exportreportAlertHigh, boolean exportreportAlertMedium, boolean exportreportAlertLow, boolean exportreportAlertInformational,
             boolean exportreportCWEID, boolean exportreportWASCID, boolean exportreportDescription, boolean exportreportOtherInfo, boolean exportreportSolution, boolean exportreportReference, boolean exportreportRequestHeader, boolean exportreportResponseHeader, boolean exportreportRequestBody, boolean exportreportResponseBody,
             boolean jiraCreate, String jiraProjectKey, String jiraAssignee, boolean jiraAlertHigh, boolean jiraAlertMedium, boolean jiraAlertLow, boolean jiraFilterIssuesByResourceType,
+            boolean buildThresholds, int hThresholdValue, int hSoftValue, int mThresholdValue, int  mSoftValue, int lThresholdValue, int lSoftValue, int iThresholdValue, int iSoftValue, int cumulValue,
             List<ZAPCmdLine> cmdLinesZAP) {
 
         /* Startup */
@@ -283,6 +285,18 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         this.jiraAlertMedium = jiraAlertMedium;
         this.jiraAlertLow = jiraAlertLow;
         this.jiraFilterIssuesByResourceType = jiraFilterIssuesByResourceType;
+
+        /* Post Build Step*/
+        this.buildThresholds=buildThresholds;
+        this.hThresholdValue= hThresholdValue;
+        this.hSoftValue = hSoftValue;
+        this.mThresholdValue = mThresholdValue;
+        this.mSoftValue = mSoftValue;
+        this.lThresholdValue = lThresholdValue;
+        this.lSoftValue = lSoftValue;
+        this.iThresholdValue = iThresholdValue;
+        this.iSoftValue = iSoftValue;
+        this.cumulValue = cumulValue;
         /* Other */
         this.cmdLinesZAP = cmdLinesZAP != null ? new ArrayList<ZAPCmdLine>(cmdLinesZAP) : new ArrayList<ZAPCmdLine>();
 
@@ -413,6 +427,19 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         s += "jiraAlertMedium [" + jiraAlertMedium + "]\n";
         s += "jiraAlertLow [" + jiraAlertLow + "]\n";
         s += "jiraFilterIssuesByResourceType[" + jiraFilterIssuesByResourceType + "]\n";
+        s += "\n";
+        s += " Post build \n";
+        s += "-------------------------------------------------------\n";
+        s += "buildThresholds [" + buildThresholds + "]\n";
+        s += "hThresholdValue [" + hThresholdValue + "]\n";
+        s += "hSoftValue [" + hSoftValue + "]\n";
+        s += "mThresholdValue [" + mThresholdValue + "]\n";
+        s += "mSoftValue [" + mSoftValue + "]\n";
+        s += "lThresholdValue [" + lThresholdValue + "]\n";
+        s += "lSoftValue [" + lSoftValue + "]\n";
+        s += "iThresholdValue [" + iThresholdValue + "]\n";
+        s += "iSoftValue [" + iSoftValue + "]\n";
+        s += "cumulValue [" + cumulValue + "]\n";
         return s;
     }
 
@@ -1086,8 +1113,9 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      *            of type FilePath: a {@link FilePath} representing the build's workspace.
      * @return of type: boolean DESC: true if no exception is caught, false otherwise.
      */
-    public boolean executeZAP(BuildListener listener, FilePath workspace) {
+    public Result executeZAP(BuildListener listener, FilePath workspace) {
         boolean buildSuccess = true;
+        Result buildStatus=Result.SUCCESS;
 
         /* Check to make sure that plugin's are installed with ZAP if they are selected in the UI. */
         if (((this.generateReports) && this.selectedReportMethod.equals(EXPORT_REPORT)) || (this.jiraCreate)) {
@@ -1231,11 +1259,18 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                 Utils.loggerMessage(listener, 1, "ALERTS COUNT [ {1} ]", Utils.ZAP, numberOfAlerts);
                 String numberOfMessages = ((ApiResponseElement) clientApi.core.numberOfMessages("")).getValue();
                 Utils.loggerMessage(listener, 1, "MESSAGES COUNT [ {1} ]", Utils.ZAP, numberOfMessages);
+
+                 /* POST BUILD STEP */
+                Utils.lineBreak(listener);
+                Utils.loggerMessage(listener, 0, "[{0}] MANAGE POST-BUILD THRESHOLD(S) ENABLED [ {1} ]", Utils.ZAP, String.valueOf(this.buildThresholds).toUpperCase());
+                if(this.buildThresholds) buildStatus = ManageThreshold(listener, clientApi, this.hThresholdValue, this.hSoftValue, this.mThresholdValue, this.mSoftValue, this.lThresholdValue, this.lSoftValue, this.iThresholdValue, this.iSoftValue, this.cumulValue);
+
             }
         }
         catch (Exception e) {
             listener.error(ExceptionUtils.getStackTrace(e));
             buildSuccess = false;
+            buildStatus = Result.ABORTED;
         }
         finally {
             try {
@@ -1244,10 +1279,11 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
             catch (ClientApiException e) {
                 listener.error(ExceptionUtils.getStackTrace(e));
                 buildSuccess = false;
+                buildStatus = Result.ABORTED;
             }
         }
         Utils.lineBreak(listener);
-        return buildSuccess;
+        return buildStatus;
     }
 
     /**
@@ -2103,6 +2139,107 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
             }
         }
         else Utils.loggerMessage(listener, 1, "SKIP ACTIVE SCAN FOR THE SITE [ {0} ]", targetURL);
+    }
+
+    /**
+     * ManageThreshold define build value failed, pass , unstable.
+     *
+     * @param listener
+     *            of type BuildListener: the display log listener during the Jenkins job execution.
+     * @param clientApi
+     *            of type ClientApi: the ZAP client API to call method.
+     * @param hThresholdValue
+     *            of type int: the Weight of the alert severity high.
+     * @param hSoftValue
+     *            of type int: the threshold of the alert severity high.
+     * @param mThresholdValue
+     *            of type int: the Weight of the alert severity meduim.
+     * @param mSoftValue
+     *            of type int: the threshold of the alert severity meduim.
+     * @param lThresholdValue
+     *            of type int: the Weight of the alert severity low.
+     * @param lSoftValue
+     *            of type int: the threshold of the alert severity low.
+     * @param iThresholdValue
+     *             of type int: the Weight of the alert severity informational.
+     * @param iSoftValue
+     *            of type int: the threshold of the alert severity informational.
+     * @param cumulValue
+     *            of type int: the cumulative threshold of the alerts.
+     *
+     */
+
+    private Result ManageThreshold(BuildListener listener,ClientApi clientApi, int hThresholdValue, int hSoftValue, int mThresholdValue, int  mSoftValue, int lThresholdValue, int lSoftValue, int iThresholdValue, int iSoftValue, int cumulValue) throws ClientApiException, IOException {
+
+        Utils.lineBreak(listener);
+        Utils.loggerMessage(listener, 0, "START : COMPUTE THRESHOLD", Utils.ZAP);
+        Result buildStatus = Result.SUCCESS;
+
+        Utils.lineBreak(listener);
+        int nbAlertHigh = countAlertbySeverity(clientApi, "High");
+        Utils.loggerMessage(listener, 1, "ALERTS High COUNT [ {1} ]", Utils.ZAP, Integer.toString(nbAlertHigh));
+
+        int nbAlertMedium = countAlertbySeverity(clientApi, "Medium");
+        Utils.loggerMessage(listener, 1, "ALERTS Medium COUNT [ {1} ]", Utils.ZAP, Integer.toString(nbAlertMedium));
+
+        int nbAlertLow = countAlertbySeverity(clientApi, "Low");
+        Utils.loggerMessage(listener, 1, "ALERTS Low COUNT [ {1} ]", Utils.ZAP, Integer.toString(nbAlertLow));
+
+        int nbAlertInfo =countAlertbySeverity(clientApi, "Informational");
+        Utils.loggerMessage(listener, 1, "ALERTS Informational COUNT [ {1} ]", Utils.ZAP, Integer.toString(nbAlertInfo));
+
+        int hScale = computeProduct(hThresholdValue,nbAlertHigh);
+        int mScale = computeProduct(mThresholdValue,nbAlertMedium);
+        int lScale = computeProduct(lThresholdValue,nbAlertLow);
+        int iScale = computeProduct(iThresholdValue,nbAlertInfo);
+
+        if((mScale > mSoftValue) || (lScale > lSoftValue ) || (iScale > iSoftValue)){buildStatus = Result.UNSTABLE;}
+        
+        if((hScale > hSoftValue) || ((hScale+mScale+lScale+iScale)> cumulValue)){buildStatus = Result.FAILURE;}
+       
+        Utils.loggerMessage(listener, 0, "END : COMPUTING THRESHOLD", Utils.ZAP);
+
+        return  buildStatus;
+
+    }
+
+    /**
+     * computeProduct do the product of two Integer.
+     *
+     * @param a
+     *            of type Integer.
+     * @param b
+     *            of type Integer.
+    */
+    public int computeProduct(int a, int b){
+        int res;
+        res = a * b;
+        return res;
+    }
+
+    /**
+     * countAlertbySeverity count the number of alert by severity.
+     *
+     * @param clientApi
+     *            of type ClientApi: the ZAP client API to call method.
+     * @param risk
+     *            of type string : it's the alert severity.
+     */
+    public int countAlertbySeverity(ClientApi clientApi,String risk)throws ClientApiException{
+        int nbAlert = 0;
+        List<String> tempid = new ArrayList<String>();
+        tempid.add("begin");
+
+        List allAlerts1 = ((ApiResponseList) clientApi.core.alerts("","","")).getItems();
+        for(int i=0;i<allAlerts1.size();i++) {
+            ApiResponseSet temp = ((ApiResponseSet) allAlerts1.get(i));
+            if (!tempid.contains(temp.getValue("alert").toString())) {
+                if (risk.equals(temp.getValue("risk").toString())) {nbAlert++;}
+            }
+            tempid.add(temp.getValue("alert").toString());
+        }
+
+        return nbAlert;
     }
 
     /**
@@ -3178,5 +3315,37 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     private final boolean jiraFilterIssuesByResourceType; /* Filter issues by resource type. */
 
     public boolean getFiraFilterIssuesByResourceType() { return jiraFilterIssuesByResourceType; }
+
+    /* Post Build Step >> Manage Threshold */
+
+    private final boolean buildThresholds;
+    public boolean isbuildThresholds() {return buildThresholds;}
+
+    private final int hThresholdValue;
+    public int gethThresholdValue() {return hThresholdValue;}
+
+    private final int hSoftValue;
+    public int gethSoftValue() {return hSoftValue;}
+
+    private final int mThresholdValue;
+    public int getmThresholdValue() {return mThresholdValue;}
+
+    private final int mSoftValue;
+    public int getmSoftValue() {return mSoftValue;}
+
+    private final int lThresholdValue;
+    public int getlThresholdValue() {return lThresholdValue;}
+
+    private final int lSoftValue;
+    public int getlSoftValue() {return lSoftValue;}
+
+    private final int iThresholdValue;
+    public int getiThresholdValue() {return iThresholdValue;}
+
+    private final int iSoftValue;
+    public int getiSoftValue() {return iSoftValue;}
+
+    private final int cumulValue;
+    public int getcumulValue() {return cumulValue;}
     /*****************************/
 }

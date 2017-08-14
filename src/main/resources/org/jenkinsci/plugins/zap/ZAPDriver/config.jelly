@@ -325,4 +325,43 @@ SOFTWARE.
       </f:entry>
     </f:optionalBlock>
   </f:section>
+  <f:section title="${%Post Build}">
+    <f:optionalBlock title="${%Define Build Management Threshold }" field="buildThresholds" inline="true">
+      <f:entry>
+        <table width="100%">
+          <tr>
+            <th></th>
+            <th>${%Threshold Value}</th>
+            <th>${%Soft Threshold }</th>
+          </tr>
+          <tr>
+            <td>High</td>
+            <td><f:textbox field="hThresholdValue"/></td>
+            <td><f:textbox field="hSoftValue"/></td>
+          </tr>
+          <tr>
+            <td>Medium</td>
+            <td><f:textbox field="mThresholdValue"/></td>
+            <td><f:textbox field="mSoftValue"/></td>
+          </tr>
+          <tr>
+            <td>Low</td>
+            <td><f:textbox field="lThresholdValue"/></td>
+            <td><f:textbox field="lSoftValue"/></td>
+          </tr>
+          <tr>
+            <td>Info</td>
+            <td><f:textbox field="iThresholdValue"/></td>
+            <td><f:textbox field="iSoftValue"/></td>
+          </tr>
+        </table>
+        <table width="100%">
+          <tr>
+            <td>Cumulative Threshold</td>
+            <td><f:textbox field="cumulValue"/></td>
+          </tr>
+        </table>
+      </f:entry>
+    </f:optionalBlock>
+  </f:section>
 </j:jelly>
