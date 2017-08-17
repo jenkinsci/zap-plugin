@@ -51,7 +51,7 @@ import hudson.tasks.Publisher;
 import hudson.tasks.Recorder;
 
 /**
- * 
+ * @author Lenaic Tchokogoue
  * @author Goran Sarenkapa
  * 
  */
@@ -106,6 +106,9 @@ public class ZAPManagementBuilder extends Recorder {
                 System.out.println("my action host: " + zapInterface.getHost());
                 System.out.println("my action port: " + zapInterface.getPort());
                 System.out.println("my action command line args extra: " + zapInterface.getCommandLineArgs().size());
+                System.out.println("my action autoinstall: " + zapInterface.getAutoInstall());
+                System.out.println("my action tool used: " + zapInterface.getToolUsed());
+                System.out.println("my action session path: " + zapInterface.getSessionFilePath());
                 System.out.println("----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ");
                 for (int i = 0; i < zapInterface.getCommandLineArgs().size(); i++) {
                     System.out.println(zapInterface.getCommandLineArgs().get(i));
@@ -117,6 +120,9 @@ public class ZAPManagementBuilder extends Recorder {
                 this.management.setHost(zapInterface.getHost());
                 this.management.setPort(zapInterface.getPort());
                 this.management.setCommandLineArgs(zapInterface.getCommandLineArgs());
+                this.management.setAutoInstall(zapInterface.getAutoInstall());
+                this.management.setToolUsed(zapInterface.getToolUsed());
+                this.management.setSessionFilePath(zapInterface.getSessionFilePath());
             }
         }
         else {
@@ -145,9 +151,10 @@ public class ZAPManagementBuilder extends Recorder {
             return false;
         }
         
-        boolean res;
+        Result res;
         try {
             res = build.getWorkspace().act(new ZAPManagementCallable(listener, this.management));
+            build.setResult(res);
             proc.joinWithTimeout(60L, TimeUnit.MINUTES, listener);
             Utils.lineBreak(listener);
             Utils.lineBreak(listener);
@@ -161,7 +168,7 @@ public class ZAPManagementBuilder extends Recorder {
         }
         // EnvVars abc = build.getEnvironment(listener);
         // printMap(abc);
-        return res;
+        return res.completeBuild;
     }
     private void printMap(Map mp) {
         Iterator it = mp.entrySet().iterator();
@@ -190,7 +197,7 @@ public class ZAPManagementBuilder extends Recorder {
     /**
      * Used to execute ZAP remotely.
      */
-    private static class ZAPManagementCallable implements FileCallable<Boolean> {
+    private static class ZAPManagementCallable implements FileCallable<Result> {
 
         private static final long serialVersionUID = 1L;
         private BuildListener listener;
@@ -202,7 +209,7 @@ public class ZAPManagementBuilder extends Recorder {
         }
 
         @Override
-        public Boolean invoke(File f, VirtualChannel channel) { return management.executeZAP(listener, new FilePath(f)); }
+        public Result invoke(File f, VirtualChannel channel) { return management.executeZAP(listener, new FilePath(f)); }
 
         @Override
         public void checkRoles(RoleChecker checker) throws SecurityException { /* N/A */ }

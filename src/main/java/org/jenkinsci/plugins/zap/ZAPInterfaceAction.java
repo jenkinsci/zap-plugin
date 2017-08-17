@@ -1,10 +1,13 @@
 package org.jenkinsci.plugins.zap;
 
 import java.util.ArrayList;
-
-import org.zaproxy.clientapi.core.ClientApi;
-
 import hudson.model.Action;
+
+/**
+ * @author Lenaic Tchokogoue
+ * @author Goran Sarenkapa
+ *
+ */
 
 public class ZAPInterfaceAction implements Action {
 
@@ -14,8 +17,11 @@ public class ZAPInterfaceAction implements Action {
     private String homeDir;
     private String host;
     private int port;
+    private boolean autoInstall;
+    private String toolUsed;
+    public String sessionFilePath;
     ArrayList<ZAPCmdLine> commandLineArgs;
-    
+
     public ZAPInterfaceAction() {
         this.buildStatus = false;
 
@@ -25,13 +31,12 @@ public class ZAPInterfaceAction implements Action {
         this.host = "";
         this.port = 0;
         this.commandLineArgs = null;
-        System.out.println();
-        System.out.println("timeout: " + timeout);
-        System.out.println("homeDir: " + homeDir);
-        System.out.println("installationEnv: " + installationEnvVar);
+        this.autoInstall = false;
+        this.toolUsed= null;
+        this.sessionFilePath=null;
     }
 
-    public ZAPInterfaceAction(boolean buildStatus, String hello, int low, ClientApi i, int timeout, String installationEnvVar, String homeDir, String host, int port, ArrayList<ZAPCmdLine> commandLineArgs) {
+    public ZAPInterfaceAction(boolean buildStatus, String toolUsed, boolean autoInstall, String sessionFilePath, int timeout, String installationEnvVar, String homeDir, String host, int port, ArrayList<ZAPCmdLine> commandLineArgs) {
         this.buildStatus = buildStatus;
         this.timeout = timeout;
         this.installationEnvVar = installationEnvVar;
@@ -39,11 +44,10 @@ public class ZAPInterfaceAction implements Action {
         this.host = host;
         this.port = port;
         this.commandLineArgs = commandLineArgs;
-        System.out.println();
-        System.out.println("timeout: " + timeout);
-        System.out.println("homeDir: " + homeDir);
-        System.out.println("commandLineArgs: " + commandLineArgs.size());
-        
+        this.autoInstall = autoInstall;
+        this.toolUsed= toolUsed;
+        this.sessionFilePath = sessionFilePath;
+
     }
     public boolean getBuildStatus() {
         return this.buildStatus;
@@ -51,6 +55,22 @@ public class ZAPInterfaceAction implements Action {
 
     public void setBuildStatus(boolean buildStatus) {
         this.buildStatus = buildStatus;
+    }
+
+    public boolean getAutoInstall() {
+        return this.autoInstall;
+    }
+
+    public void setAutoInstall(boolean autoInstall) {
+        this.autoInstall = autoInstall;
+    }
+
+    public String getToolUsed() {
+        return this.toolUsed;
+    }
+
+    public void setToolUsed(String toolUsed) {
+        this.toolUsed = toolUsed;
     }
 
     public int getTimeout() {
@@ -76,11 +96,11 @@ public class ZAPInterfaceAction implements Action {
     public void setHomeDir(String homeDir) {
         this.homeDir = homeDir;
     }
-    
+
     public String getHost() {
         return this.host;
     }
-    
+
     public void setHost(String host) {
         this.host = host;
     }
@@ -88,18 +108,22 @@ public class ZAPInterfaceAction implements Action {
     public int getPort() {
         return this.port;
     }
-    
+
     public void setPort(int port) {
         this.port = port;
     }
-    
+
     public ArrayList<ZAPCmdLine> getCommandLineArgs(){
         return commandLineArgs;
     }
-    
+
     public void setCommandLineArgs(ArrayList<ZAPCmdLine> commandLineArgs){
         this.commandLineArgs = commandLineArgs;
     }
+
+    public String getSessionFilePath(){return this.sessionFilePath;}
+
+    public void setSessionFilePath(String sessionFilePath){this.sessionFilePath = sessionFilePath;}
 
     @Override
     public String getDisplayName() {

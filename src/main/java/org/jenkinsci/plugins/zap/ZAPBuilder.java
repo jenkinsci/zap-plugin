@@ -61,7 +61,8 @@ import net.sf.json.JSONObject;
 
 /**
  * The main class of the plugin. This class adds a build step in a Jenkins job that allows you to launch the ZAP security tool and generate reports based on the alerts.
- * 
+ *
+ * @author Lenaic Tchokogoue
  * @author Goran Sarenkapa
  * @author Mostafa AbdelMoez
  * @author Tanguy de Lignières
@@ -69,13 +70,13 @@ import net.sf.json.JSONObject;
  * @author Thilina Madhusanka
  * @author Johann Ollivier-Lapeyre
  * @author Ludovic Roucoux
- * 
+ *
  */
-public class ZAPBuilder extends Builder {
+public class  ZAPBuilder extends Builder {
 
     /**
      * The @DataBoundConstructor is a constructor and it's parameter names must match the fields in associated config file {@link "com/github/jenkinsci/zaproxyplugin/ZAPBuilder/config.jelly"} and additional can set the parameter values for the global configurations {@link "com/github/jenkinsci/zaproxyplugin/ZAPBuilder/global.jelly"}.
-     * 
+     *
      * @param startZAPFirst
      *            of type boolean: start zap as a pre-build step or not.
      * @param zapHost
@@ -344,7 +345,11 @@ public class ZAPBuilder extends Builder {
         zapInterface.setTimeout(zaproxy.getTimeout());
         zapInterface.setHost(zaproxy.getEvaluatedZapHost());
         zapInterface.setPort(zaproxy.getEvaluatedZapPort());
+        zapInterface.setAutoInstall(zaproxy.getAutoInstall());
+        zapInterface.setToolUsed(zaproxy.getToolUsed());
         zapInterface.setCommandLineArgs(zaproxy.getEvaluatedCmdLinesZap());
+        zapInterface.setSessionFilePath(zaproxy.getSessionFilePath());
+
         return res;
     }
 
@@ -373,13 +378,13 @@ public class ZAPBuilder extends Builder {
 
     /**
      * @Extension indicates to Jenkins this is an implementation of an extension point.
-     * 
+     *
      * Descriptor for {@link ZAPBuilder}. Used as a singleton. The class is marked as public so that it can be accessed from views.
      *
      * <p>
      * See <tt>src/main/resources/com/github/jenkinsci/zaproxyplugin/ZAPBuilder/*.jelly</tt> for the actual HTML fragment for the configuration screen.
      */
-    @Extension 
+    @Extension
     public static final ZAPBuilderDescriptorImpl DESCRIPTOR = new ZAPBuilderDescriptorImpl();
 
     public static final class ZAPBuilderDescriptorImpl extends BuildStepDescriptor<Builder> {
@@ -508,7 +513,7 @@ public class ZAPBuilder extends Builder {
         private File sourceFile;
         private String destination;
         private String stringForLogger;
-        
+
         public CopyFileCallable(File sourceFile, String destination, String stringForLogger) {
             this.sourceFile = sourceFile;
             this.destination = destination;

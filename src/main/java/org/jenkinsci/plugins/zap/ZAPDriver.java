@@ -736,49 +736,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      * @see <a href= "https://groups.google.com/forum/#!topic/zaproxy-develop/gZxYp8Og960"> [JAVA] Avoid sleep to wait ZAProxy initialization</a>
      */
     private void waitForSuccessfulConnectionToZap(BuildListener listener, int timeout) {
-        int timeoutInMs = (int) TimeUnit.SECONDS.toMillis(timeout);
-        int connectionTimeoutInMs = timeoutInMs;
-        int pollingIntervalInMs = (int) TimeUnit.SECONDS.toMillis(1);
-        boolean connectionSuccessful = false;
-        long startTime = System.currentTimeMillis();
-        Socket socket = null;
-        do
-            try {
-                socket = new Socket();
-                socket.connect(new InetSocketAddress(evaluatedZapHost, evaluatedZapPort), connectionTimeoutInMs);
-                connectionSuccessful = true;
-            }
-        catch (SocketTimeoutException ignore) {
-            listener.error(ExceptionUtils.getStackTrace(ignore));
-            throw new BuildException("Unable to connect to ZAP's proxy after " + timeout + " seconds.");
-
-        }
-        catch (IOException ignore) {
-            /* Try again but wait some time first */
-            try {
-                Thread.sleep(pollingIntervalInMs);
-            }
-            catch (InterruptedException e) {
-                listener.error(ExceptionUtils.getStackTrace(ignore));
-                throw new BuildException("The task was interrupted while sleeping between connection polling.", e);
-            }
-
-            long ellapsedTime = System.currentTimeMillis() - startTime;
-            if (ellapsedTime >= timeoutInMs) {
-                listener.error(ExceptionUtils.getStackTrace(ignore));
-                throw new BuildException("Unable to connect to ZAP's proxy after " + timeout + " seconds.");
-            }
-            connectionTimeoutInMs = (int) (timeoutInMs - ellapsedTime);
-        }
-        finally {
-            if (socket != null) try {
-                socket.close();
-            }
-            catch (IOException e) {
-                listener.error(ExceptionUtils.getStackTrace(e));
-            }
-        }
-        while (!connectionSuccessful);
+        ZAP.waitForSuccessfulConnectionToZap(listener, timeout, evaluatedZapHost, evaluatedZapPort);
     }
 
     /**
@@ -1241,7 +1199,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         }
         finally {
             try {
-                stopZAP(listener, clientApi);
+                ZAP.stopZAP(listener, clientApi);
             }
             catch (ClientApiException e) {
                 listener.error(ExceptionUtils.getStackTrace(e));
@@ -1252,22 +1210,6 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         return buildSuccess;
     }
 
-    public Result executeZAPPostBuild(BuildListener listener, FilePath workspace) {
-        Result buildStatus = Result.SUCCESS;
-        ClientApi clientApi = new ClientApi(this.evaluatedZapHost, this.evaluatedZapPort, API_KEY);
-        Utils.lineBreak(listener);
-//        Utils.loggerMessage(listener, 0, "[{0}] MANAGE POST-BUILD THRESHOLD(S) ENABLED [ {1} ]", Utils.ZAP, String.valueOf(this.buildThresholds).toUpperCase());
-//        if(this.buildThresholds) try {
-//            buildStatus = ManageThreshold(listener, clientApi, this.hThresholdValue, this.hSoftValue, this.mThresholdValue, this.mSoftValue, this.lThresholdValue, this.lSoftValue, this.iThresholdValue, this.iSoftValue, this.cumulValue);
-//        } catch (ClientApiException e) {
-//            e.printStackTrace();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-
-        return buildStatus;
-
-    }
 
     /**
      * Method used to return the checked state inside CREATE JIRA ISSUES.
@@ -2125,34 +2067,6 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     }
 
     /**
-     * Stop ZAP if it has been previously started.
-     * 
-     * @param listener
-     *            of type BuildListener: the display log listener during the Jenkins job execution.
-     * @param clientApi
-     *            of type ClientApi: the ZAP client API to call method.
-     * @throws ClientApiException
-     */
-    private void stopZAP(BuildListener listener, ClientApi clientApi) throws ClientApiException {
-        if (clientApi != null) {
-            Utils.lineBreak(listener);
-            Utils.loggerMessage(listener, 0, "[{0}] SHUTDOWN [ START ]", Utils.ZAP);
-            Utils.lineBreak(listener);
-            /**
-             * @class ApiResponse org.zaproxy.clientapi.gen.Core
-             *
-             * @method shutdown
-             *
-             * @param String apikey
-             *
-             * @throws ClientApiException
-             */
-            clientApi.core.shutdown();
-        }
-        else Utils.loggerMessage(listener, 0, "[{0}] SHUTDOWN [ ERROR ]", Utils.ZAP);
-    }
-
-    /**
      * Descriptor for {@link ZAPDriver}. Used as a singleton. The class is marked as public so that it can be accessed from views.
      *
      * <p>
@@ -2875,6 +2789,22 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
     public void setEvaluatedInternalSites(String evaluatedInternalSites) { this.evaluatedInternalSites = evaluatedInternalSites; }
 
+    private String sessionFilePath ;
+
+    public void setSessionFilePath(String sessionFilePath ){ this.sessionFilePath = sessionFilePath; }
+
+    public String getSessionFilePath(){
+        sessionFilePath =  null ;
+        if (this.autoLoadSession) { /* LOAD SESSION */
+            File sessionFile = new File(this.loadSession);
+            sessionFilePath = sessionFile.getAbsolutePath() ;
+        }
+        else { /* PERSIST SESSION */
+            File sessionFile = new File(this.zapHome, this.evaluatedSessionFilename);
+            sessionFilePath = sessionFile.getAbsolutePath() ;
+        }
+        return sessionFilePath;
+    }
     /* Session Properties */
     private final String contextName; /* Context name to use for the session. */
 
