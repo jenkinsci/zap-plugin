@@ -139,6 +139,7 @@ public class ZAPBuilder extends Builder {
         String includedURL = zaproxy.getIncludedURL();
         String excludedURL = zaproxy.getExcludedURL();
         String targetURL = zaproxy.getTargetURL();
+        String loginURL = zaproxy.getLoginURL();
         String reportName = zaproxy.getReportFilename();
         String reportTitle = zaproxy.getExportreportTitle();
         ArrayList<ZAPCmdLine> cmdLinesZap = new ArrayList<ZAPCmdLine>(zaproxy.getCmdLinesZAP().size());
@@ -152,6 +153,7 @@ public class ZAPBuilder extends Builder {
             includedURL = applyMacro(build, listener, includedURL);
             excludedURL = applyMacro(build, listener, excludedURL);
             targetURL = applyMacro(build, listener, targetURL);
+            loginURL = applyMacro(build, listener, loginURL);
             reportName = applyMacro(build, listener, reportName);
             reportTitle = applyMacro(build, listener, reportTitle);
             for (ZAPCmdLine cmdLineZap : zaproxy.getCmdLinesZAP())
@@ -169,6 +171,7 @@ public class ZAPBuilder extends Builder {
         zaproxy.setEvaluatedIncludedURL(includedURL);
         zaproxy.setEvaluatedExcludedURL(excludedURL);
         zaproxy.setEvaluatedTargetURL(targetURL);
+        zaproxy.setEvaluatedLoginURL(loginURL);
         zaproxy.setEvaluatedReportFilename(reportName);
         zaproxy.setEvaluatedExportreportTitle(reportTitle);
         zaproxy.setEvaluatedCmdLinesZap(cmdLinesZap);
@@ -186,6 +189,7 @@ public class ZAPBuilder extends Builder {
         Utils.loggerMessage(listener, 1, "EXCLUDE FROM CONTEXT = [ {0} ]", excludedURL.trim().replace("\n", ", "));
         Utils.lineBreak(listener);
         Utils.loggerMessage(listener, 1, "STARTING POINT (URL) = [ {0} ]", targetURL);
+        Utils.loggerMessage(listener, 1, "LOGIN FORM (URL) = [ {0} ]", loginURL);
         Utils.loggerMessage(listener, 1, "REPORT FILENAME = [ {0} ]", reportName);
         Utils.loggerMessage(listener, 1, "REPORT TITLE = [ {0} ]", reportTitle);
         Utils.lineBreak(listener);

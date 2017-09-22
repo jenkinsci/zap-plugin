@@ -557,6 +557,10 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         if (this.evaluatedTargetURL == null || this.evaluatedTargetURL.isEmpty()) throw new IllegalArgumentException("STARTING POINT (URL) IS MISSING, PROVIDED [ " + this.evaluatedTargetURL + " ]");
         else Utils.loggerMessage(listener, 1, "(EXP) STARTING POINT (URL) = [ {0} ]", this.evaluatedTargetURL);
 
+        this.evaluatedLoginURL = envVars.expand(this.evaluatedLoginURL);
+        if (this.evaluatedLoginURL == null || this.evaluatedLoginURL.isEmpty()) throw new IllegalArgumentException("STARTING POINT (URL) IS MISSING, PROVIDED [ " + this.evaluatedLoginURL + " ]");
+        else Utils.loggerMessage(listener, 1, "(EXP) STARTING POINT (URL) = [ {0} ]", this.evaluatedLoginURL);
+
         if (this.generateReports) {
             this.evaluatedReportFilename = envVars.expand(this.evaluatedReportFilename);
             if (this.evaluatedReportFilename == null || this.evaluatedReportFilename.isEmpty()) throw new IllegalArgumentException("REPORT FILENAME IS MISSING, PROVIDED [ " + this.evaluatedReportFilename + " ]");
@@ -1180,8 +1184,8 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                 Utils.loggerMessage(listener, 0, "[{0}] AUTHENTICATION MODE [ {1} ]", Utils.ZAP, this.authMethod.toUpperCase());
                 Utils.lineBreak(listener);
                 /* SETUP AUTHENICATION */
-                if (this.authMode) if (this.authMethod.equals(FORM_BASED)) this.userId = setUpAuthentication(listener, clientApi, this.contextId, this.loginURL, this.username, this.password, this.loggedInIndicator, this.loggedOutIndicator, this.extraPostData, this.authMethod, this.usernameParameter, this.passwordParameter, null, null);
-                else if (this.authMethod.equals(SCRIPT_BASED)) this.userId = setUpAuthentication(listener, clientApi, this.contextId, this.loginURL, this.username, this.password, this.loggedInIndicator, this.loggedOutIndicator, this.extraPostData, this.authMethod, null, null, this.authScript, this.authScriptParams);
+                if (this.authMode) if (this.authMethod.equals(FORM_BASED)) this.userId = setUpAuthentication(listener, clientApi, this.contextId, this.evaluatedLoginURL, this.username, this.password, this.loggedInIndicator, this.loggedOutIndicator, this.extraPostData, this.authMethod, this.usernameParameter, this.passwordParameter, null, null);
+                else if (this.authMethod.equals(SCRIPT_BASED)) this.userId = setUpAuthentication(listener, clientApi, this.contextId, this.evaluatedLoginURL, this.username, this.password, this.loggedInIndicator, this.loggedOutIndicator, this.extraPostData, this.authMethod, null, null, this.authScript, this.authScriptParams);
 
                 /* SETUP ATTACK MODES */
                 Utils.lineBreak(listener);
@@ -2924,6 +2928,12 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     private final String loginURL; /* Login URL. */
 
     public String getLoginURL() { return loginURL; }
+
+    private String evaluatedLoginURL; /* Todo */
+
+    public String getEvaluatedLoginURL() { return evaluatedLoginURL; }
+
+    public void setEvaluatedLoginURL(String evaluatedLoginURL) { this.evaluatedLoginURL = evaluatedLoginURL; }
 
     private final String usernameParameter; /* username post data parameter (form based authentication). */
 
