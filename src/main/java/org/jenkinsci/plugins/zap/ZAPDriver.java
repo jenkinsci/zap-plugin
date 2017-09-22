@@ -558,8 +558,8 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         else Utils.loggerMessage(listener, 1, "(EXP) STARTING POINT (URL) = [ {0} ]", this.evaluatedTargetURL);
 
         this.evaluatedLoginURL = envVars.expand(this.evaluatedLoginURL);
-        if (this.evaluatedLoginURL == null || this.evaluatedLoginURL.isEmpty()) throw new IllegalArgumentException("STARTING POINT (URL) IS MISSING, PROVIDED [ " + this.evaluatedLoginURL + " ]");
-        else Utils.loggerMessage(listener, 1, "(EXP) STARTING POINT (URL) = [ {0} ]", this.evaluatedLoginURL);
+        if (this.evaluatedLoginURL == null || this.evaluatedLoginURL.isEmpty()) throw new IllegalArgumentException("LOGIN FORM TARGET (URL) IS MISSING, PROVIDED [ " + this.evaluatedLoginURL + " ]");
+        else Utils.loggerMessage(listener, 1, "(EXP) LOGIN FORM TARGET (URL) = [ {0} ]", this.evaluatedLoginURL);
 
         if (this.generateReports) {
             this.evaluatedReportFilename = envVars.expand(this.evaluatedReportFilename);

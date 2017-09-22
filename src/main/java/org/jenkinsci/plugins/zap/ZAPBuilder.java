@@ -189,7 +189,7 @@ public class ZAPBuilder extends Builder {
         Utils.loggerMessage(listener, 1, "EXCLUDE FROM CONTEXT = [ {0} ]", excludedURL.trim().replace("\n", ", "));
         Utils.lineBreak(listener);
         Utils.loggerMessage(listener, 1, "STARTING POINT (URL) = [ {0} ]", targetURL);
-        Utils.loggerMessage(listener, 1, "LOGIN FORM (URL) = [ {0} ]", loginURL);
+        Utils.loggerMessage(listener, 1, "LOGIN FORM TARGET (URL) = [ {0} ]", loginURL);
         Utils.loggerMessage(listener, 1, "REPORT FILENAME = [ {0} ]", reportName);
         Utils.loggerMessage(listener, 1, "REPORT TITLE = [ {0} ]", reportTitle);
         Utils.lineBreak(listener);
