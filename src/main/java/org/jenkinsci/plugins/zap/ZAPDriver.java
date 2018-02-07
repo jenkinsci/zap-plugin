@@ -1229,8 +1229,6 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                 Utils.loggerMessage(listener, 0, "[{0}] SUMMARY...", Utils.ZAP);
                 String numberOfAlerts = ((ApiResponseElement) clientApi.core.numberOfAlerts("")).getValue();
                 Utils.loggerMessage(listener, 1, "ALERTS COUNT [ {1} ]", Utils.ZAP, numberOfAlerts);
-                String numberOfMessages = ((ApiResponseElement) clientApi.core.numberOfMessages("")).getValue();
-                Utils.loggerMessage(listener, 1, "MESSAGES COUNT [ {1} ]", Utils.ZAP, numberOfMessages);
             }
         }
         catch (Exception e) {
@@ -2085,19 +2083,6 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                  */
                 String numberOfAlerts = ((ApiResponseElement) clientApi.core.numberOfAlerts("")).getValue();
                 Utils.loggerMessage(listener, 0, "[{0}] ALERTS COUNT [ {1} ]", Utils.ZAP, numberOfAlerts);
-                /**
-                 * Allows to restrict by site/URL, if none is set it returns the number of all messages.
-                 *
-                 * @class org.zaproxy.clientapi.gen.Core
-                 *
-                 * @method numberOfMessages
-                 *
-                 * @param String baseurl
-                 *
-                 * @throws ClientApiException
-                 */
-                String numberOfMessages = ((ApiResponseElement) clientApi.core.numberOfMessages("")).getValue();
-                Utils.loggerMessage(listener, 0, "[{0}] MESSAGES COUNT [ {1} ]", Utils.ZAP, numberOfMessages);
                 Utils.lineBreak(listener);
                 Thread.sleep(TREAD_SLEEP);
             }
