@@ -1043,9 +1043,11 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     private boolean deleteExternalSites (BuildListener listener, ClientApi clientApi, boolean removeExternalSites, String internalSites, boolean buildSuccess) throws ClientApiException {
         Utils.loggerMessage(listener, 0, "[{0}] REMOVE EXTERNAL SITES [ {1} ]", Utils.ZAP, String.valueOf(removeExternalSites).toUpperCase());
         Utils.loggerMessage(listener, 1, "INTERNAL SITES: [ {1} ]", Utils.ZAP, internalSites.trim().replace("\n", ", "));
+        
+        if(this.removeExternalSites){
         Utils.loggerMessage(listener, 1, "GET SITES");
         String[] urls = internalSites.split("\n");
-
+            
         ApiResponseList apiSites = null;
         apiSites = (ApiResponseList) clientApi.core.sites();
         if (apiSites.getItems().size() > 0) for (int i = 0; i < apiSites.getItems().size(); i++) {
@@ -1060,7 +1062,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                 }
             }
             if (delete) {
-                Utils.loggerMessage(listener, 2, "SITE: [ {0} ] [ EXTENERAL ]", apiSite.getValue());
+                Utils.loggerMessage(listener, 2, "SITE: [ {0} ] [ EXTERNAL ]", apiSite.getValue());
                 try {
                     clientApi.core.deleteSiteNode(apiSite.getValue(), null, null);
                     Utils.loggerMessage(listener, 3, "DELETED", apiSite.getValue());
@@ -1073,6 +1075,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                     break;
                 }
             }
+          }
         }
         return buildSuccess;
     }
