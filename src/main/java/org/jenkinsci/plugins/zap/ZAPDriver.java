@@ -86,6 +86,7 @@ import hudson.model.Descriptor;
 import hudson.model.EnvironmentSpecific;
 import hudson.model.JDK;
 import hudson.model.Node;
+import hudson.model.Result;
 import hudson.remoting.VirtualChannel;
 import hudson.slaves.NodeSpecific;
 import hudson.slaves.SlaveComputer;
@@ -632,7 +633,8 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         cmd.add(CMD_LINE_API_KEY + "=" + API_KEY);
 
         /* Set the default directory used by ZAP if it's defined and if a scan is provided */
-        if (this.activeScanURL && this.zapSettingsDir != null && !this.zapSettingsDir.isEmpty()) {
+        //if (this.activeScanURL && this.zapSettingsDir != null && !this.zapSettingsDir.isEmpty()) {
+        if (this.zapSettingsDir != null && !this.zapSettingsDir.isEmpty()) {
             cmd.add(CMD_LINE_DIR);
             cmd.add(this.zapSettingsDir);
         }
@@ -734,49 +736,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      * @see <a href= "https://groups.google.com/forum/#!topic/zaproxy-develop/gZxYp8Og960"> [JAVA] Avoid sleep to wait ZAProxy initialization</a>
      */
     private void waitForSuccessfulConnectionToZap(BuildListener listener, int timeout) {
-        int timeoutInMs = (int) TimeUnit.SECONDS.toMillis(timeout);
-        int connectionTimeoutInMs = timeoutInMs;
-        int pollingIntervalInMs = (int) TimeUnit.SECONDS.toMillis(1);
-        boolean connectionSuccessful = false;
-        long startTime = System.currentTimeMillis();
-        Socket socket = null;
-        do
-            try {
-                socket = new Socket();
-                socket.connect(new InetSocketAddress(evaluatedZapHost, evaluatedZapPort), connectionTimeoutInMs);
-                connectionSuccessful = true;
-            }
-        catch (SocketTimeoutException ignore) {
-            listener.error(ExceptionUtils.getStackTrace(ignore));
-            throw new BuildException("Unable to connect to ZAP's proxy after " + timeout + " seconds.");
-
-        }
-        catch (IOException ignore) {
-            /* Try again but wait some time first */
-            try {
-                Thread.sleep(pollingIntervalInMs);
-            }
-            catch (InterruptedException e) {
-                listener.error(ExceptionUtils.getStackTrace(ignore));
-                throw new BuildException("The task was interrupted while sleeping between connection polling.", e);
-            }
-
-            long ellapsedTime = System.currentTimeMillis() - startTime;
-            if (ellapsedTime >= timeoutInMs) {
-                listener.error(ExceptionUtils.getStackTrace(ignore));
-                throw new BuildException("Unable to connect to ZAP's proxy after " + timeout + " seconds.");
-            }
-            connectionTimeoutInMs = (int) (timeoutInMs - ellapsedTime);
-        }
-        finally {
-            if (socket != null) try {
-                socket.close();
-            }
-            catch (IOException e) {
-                listener.error(ExceptionUtils.getStackTrace(e));
-            }
-        }
-        while (!connectionSuccessful);
+        ZAP.waitForSuccessfulConnectionToZap(listener, timeout, evaluatedZapHost, evaluatedZapPort);
     }
 
     /**
@@ -1239,7 +1199,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         }
         finally {
             try {
-                stopZAP(listener, clientApi);
+                ZAP.stopZAP(listener, clientApi);
             }
             catch (ClientApiException e) {
                 listener.error(ExceptionUtils.getStackTrace(e));
@@ -1249,6 +1209,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         Utils.lineBreak(listener);
         return buildSuccess;
     }
+
 
     /**
      * Method used to return the checked state inside CREATE JIRA ISSUES.
@@ -2106,34 +2067,6 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     }
 
     /**
-     * Stop ZAP if it has been previously started.
-     * 
-     * @param listener
-     *            of type BuildListener: the display log listener during the Jenkins job execution.
-     * @param clientApi
-     *            of type ClientApi: the ZAP client API to call method.
-     * @throws ClientApiException
-     */
-    private void stopZAP(BuildListener listener, ClientApi clientApi) throws ClientApiException {
-        if (clientApi != null) {
-            Utils.lineBreak(listener);
-            Utils.loggerMessage(listener, 0, "[{0}] SHUTDOWN [ START ]", Utils.ZAP);
-            Utils.lineBreak(listener);
-            /**
-             * @class ApiResponse org.zaproxy.clientapi.gen.Core
-             *
-             * @method shutdown
-             *
-             * @param String apikey
-             *
-             * @throws ClientApiException
-             */
-            clientApi.core.shutdown();
-        }
-        else Utils.loggerMessage(listener, 0, "[{0}] SHUTDOWN [ ERROR ]", Utils.ZAP);
-    }
-
-    /**
      * Descriptor for {@link ZAPDriver}. Used as a singleton. The class is marked as public so that it can be accessed from views.
      *
      * <p>
@@ -2786,11 +2719,11 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
     private final ArrayList<ZAPCmdLine> cmdLinesZAP; /* List of all ZAP command lines specified by the user ArrayList because it needs to be Serializable (whereas List is not Serializable). */
 
-    public List<ZAPCmdLine> getCmdLinesZAP() { return cmdLinesZAP; }
+    public ArrayList<ZAPCmdLine> getCmdLinesZAP() { return cmdLinesZAP; }
 
     private ArrayList<ZAPCmdLine> evaluatedCmdLinesZap; /* Todo */
 
-    public List<ZAPCmdLine> getEvaluatedCmdLinesZap() { return evaluatedCmdLinesZap; }
+    public ArrayList<ZAPCmdLine> getEvaluatedCmdLinesZap() { return evaluatedCmdLinesZap; }
 
     public void setEvaluatedCmdLinesZap(ArrayList<ZAPCmdLine> evaluatedCmdLinesZap) { this.evaluatedCmdLinesZap = evaluatedCmdLinesZap; }
 
@@ -2856,6 +2789,22 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
     public void setEvaluatedInternalSites(String evaluatedInternalSites) { this.evaluatedInternalSites = evaluatedInternalSites; }
 
+    private String sessionFilePath ;
+
+    public void setSessionFilePath(String sessionFilePath ){ this.sessionFilePath = sessionFilePath; }
+
+    public String getSessionFilePath(){
+        sessionFilePath =  null ;
+        if (this.autoLoadSession) { /* LOAD SESSION */
+            File sessionFile = new File(this.loadSession);
+            sessionFilePath = sessionFile.getAbsolutePath() ;
+        }
+        else { /* PERSIST SESSION */
+            File sessionFile = new File(this.zapHome, this.evaluatedSessionFilename);
+            sessionFilePath = sessionFile.getAbsolutePath() ;
+        }
+        return sessionFilePath;
+    }
     /* Session Properties */
     private final String contextName; /* Context name to use for the session. */
 
