@@ -1501,7 +1501,8 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
         /* Prepare the configuration in a format similar to how URL parameters are formed. This means that any value we add for the configuration values has to be URL encoded. */
         StringBuilder scriptBasedConfig = new StringBuilder();
-        scriptBasedConfig.append("scriptName=").append(URLEncoder.encode(scriptName, "UTF-8"));
+        scriptBasedConfig.append("scriptName=").append(URLEncoder.encode(
+                scriptName.replace(FILE_AUTH_SCRIPTS_JS_EXTENSION,"").replace(FILE_AUTH_SCRIPTS_ZEST_EXTENSION,""), "UTF-8"));
         if (!authScriptParams.isEmpty()) addZAPAuthScriptParam(authScriptParams, scriptBasedConfig);
 
         /*
