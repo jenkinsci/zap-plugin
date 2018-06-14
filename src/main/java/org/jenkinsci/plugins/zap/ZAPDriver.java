@@ -133,6 +133,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
     private static final String FORM_BASED = "FORM_BASED";
     private static final String SCRIPT_BASED = "SCRIPT_BASED";
+    private static final String HTTP_BASED = "HTTP_BASED";
 
     /* Command Line Options - Not exposed through the API */
     private static final String CMD_LINE_DIR = "-dir";
@@ -167,6 +168,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
             boolean authMode, String username, String password, String loggedInIndicator, String loggedOutIndicator, String authMethod,
             String loginURL, String usernameParameter, String passwordParameter, String extraPostData,
             String authScript, List<ZAPAuthScriptParam> authScriptParams,
+            String hostname, String realm, String port,
             String targetURL,
             boolean spiderScanURL, boolean spiderScanRecurse, boolean spiderScanSubtreeOnly, int spiderScanMaxChildrenToCrawl,
             boolean ajaxSpiderURL, boolean ajaxSpiderInScopeOnly,
@@ -223,6 +225,11 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         this.authScript = authScript;
         this.authScriptParams = authScriptParams != null ? new ArrayList<ZAPAuthScriptParam>(authScriptParams) : new ArrayList<ZAPAuthScriptParam>();
 
+        /* Session Properties >> HTTP Authentication */
+        this.hostname = hostname;
+        this.realm = realm;
+        this.port = port;
+        
         /* Attack Mode */
         this.targetURL = targetURL;
 
@@ -346,6 +353,10 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         s += "Session Properties >> Script-Based Authentication\n";
         s += "authScript [" + authScript + "]\n";
         s += "\n";
+        s += "Session Properties >> HTTP-Based Authentication\n";
+        s += "hostname [" + hostname + "]\n";
+        s += "realm [" + realm + "]\n";
+        s += "port [" + port + "]\n";
         s += "Attack Modes\n";
         s += "-------------------------------------------------------\n";
         s += "targetURL [" + targetURL + "]\n";
@@ -1180,9 +1191,12 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                 Utils.loggerMessage(listener, 0, "[{0}] AUTHENTICATION MODE [ {1} ]", Utils.ZAP, this.authMethod.toUpperCase());
                 Utils.lineBreak(listener);
                 /* SETUP AUTHENICATION */
-                if (this.authMode) if (this.authMethod.equals(FORM_BASED)) this.userId = setUpAuthentication(listener, clientApi, this.contextId, this.loginURL, this.username, this.password, this.loggedInIndicator, this.loggedOutIndicator, this.extraPostData, this.authMethod, this.usernameParameter, this.passwordParameter, null, null);
-                else if (this.authMethod.equals(SCRIPT_BASED)) this.userId = setUpAuthentication(listener, clientApi, this.contextId, this.loginURL, this.username, this.password, this.loggedInIndicator, this.loggedOutIndicator, this.extraPostData, this.authMethod, null, null, this.authScript, this.authScriptParams);
-
+                /* SETUP AUTHENICATION */
+                if (this.authMode) {
+                    if (this.authMethod.equals(FORM_BASED)) this.userId = setUpAuthentication(listener, clientApi, this.contextId, this.loginURL, this.username, this.password, this.loggedInIndicator, this.loggedOutIndicator, this.extraPostData, this.authMethod, this.usernameParameter, this.passwordParameter, null, null, null, null, null);
+                    else if (this.authMethod.equals(SCRIPT_BASED)) this.userId = setUpAuthentication(listener, clientApi, this.contextId, this.loginURL, this.username, this.password, this.loggedInIndicator, this.loggedOutIndicator, this.extraPostData, this.authMethod, null, null, this.authScript, this.authScriptParams, null, null, null);
+                    else if (this.authMethod.equals(HTTP_BASED)) this.userId = setUpAuthentication(listener, clientApi, this.contextId, this.loginURL, this.username, this.password, this.loggedInIndicator, this.loggedOutIndicator, this.extraPostData, this.authMethod, null, null, null, null, this.hostname, this.realm, this.port);
+                }
                 /* SETUP ATTACK MODES */
                 Utils.lineBreak(listener);
                 Utils.loggerMessage(listener, 0, "[{0}] ATTACK MODE(S) INITIATED", Utils.ZAP);
@@ -1545,6 +1559,79 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     }
 
     /**
+     * Set up HTTP_BASED authentication method for the created context.
+     * 
+     * @param listener
+     *            of type BuildListener: the display log listener during the Jenkins job execution.
+     * @param clientApi
+     *            of type ClientApi: the ZAP client API to call method.
+     * @param contextId
+     *            of type String: ID of the created context.
+     * @param loginURL
+     *            of type String: loging page URL.
+     * @param loggedInIndicator
+     *            of type String: indicator to signify that a user is logged in.
+     * @param loggedOutIndicator
+     *            of type String: indicator to signify that a user is logged out.
+     * @param extraPostData
+     *            of type String: other post data (other than credentials).
+     * @param hostname
+     *            of type String: the domain name to be accessed that needs authentication
+     * @param realm
+     *            of type String: the organization of the user to be used for authentication
+     * @param port
+     *            of type String: the port of domain name to be accessed
+     * @throws UnsupportedEncodingException
+     * @throws ClientApiException
+     */
+    private void setUpHTTPBasedAuth(BuildListener listener, ClientApi clientApi, String contextId, String loginURL, String loggedInIndicator, String loggedOutIndicator, String extraPostData, String hostname, String realm, String port) throws UnsupportedEncodingException, ClientApiException {
+
+        /* Prepare the configuration in a format similar to how URL parameters are formed. This means that any value we add for the configuration values has to be URL encoded. */
+        StringBuilder httpBasedConfig = new StringBuilder();
+        httpBasedConfig.append("hostname=").append(URLEncoder.encode(hostname, "UTF-8"));
+        httpBasedConfig.append("&realm=").append(URLEncoder.encode(realm, "UTF-8"));
+        httpBasedConfig.append("&port=").append(URLEncoder.encode(port, "UTF-8"));
+
+        /*
+         * @class org.zaproxy.clientapi.gen.Authentication
+         *
+         * @method setAuthenticationMethod
+         *
+         * @param String String apikey
+         * @param String contextid
+         * @param String authmethodname (formBasedAuthentication, scriptBasedAuthentication, httpAuthentication and manualAuthentication)
+         * @param String authmethodconfigparams
+         *
+         * @throws ClientApiException
+         *
+         * @see https://github.com/zaproxy/zap-api-java/blob/master/subprojects/zap-clientapi/src/examples/java/org/zaproxy/clientapi/examples/authentication/FormBasedAuthentication.java
+         * @see https://github.com/zaproxy/zaproxy/wiki/FAQformauth which mentions the ZAP API (but the above example is probably more useful)
+         * @see It's possible to know more of authmethodconfigparams for each authentication method with {@link http://localhost:8080/JSON/authentication/view/getAuthenticationMethodConfigParams/?authMethodName=scriptBasedAuthentication}
+         */
+        Utils.loggerMessage(listener, 0, "[{0}] HTTP BASED AUTH SET AS: {1}", Utils.ZAP, httpBasedConfig.toString());
+        Utils.lineBreak(listener);
+        Utils.loggerMessage(listener, 0, "[{0}] LOAD SCRIPT FOR AUTHENTICATION", Utils.ZAP);
+        clientApi.authentication.setAuthenticationMethod(contextId, "httpAuthentication", httpBasedConfig.toString());
+
+        Utils.lineBreak(listener);
+        Utils.loggerMessage(listener, 0, "[{0}] AUTH CONFIG:", Utils.ZAP);
+        ApiResponseSet authData = (ApiResponseSet) clientApi.authentication.getAuthenticationMethod(contextId);
+        List<String> authList = new ArrayList<String>(Arrays.asList(authData.toString(0).replace("\t", "").split("\\r?\\n")));
+        authList.remove(0);
+        authList.remove(authList.size() - 1);
+
+        for (String tmp : authList)
+            Utils.loggerMessage(listener, 1, "{0}", tmp);
+
+        Utils.loggerMessage(listener, 1, "loggedInIndicator = {0}", loggedInIndicator);
+        if (!loggedInIndicator.equals("")) clientApi.authentication.setLoggedInIndicator(contextId, loggedInIndicator);  /* Add the logged in indicator */
+
+        Utils.loggerMessage(listener, 1, "loggedOutIndicator = {0}", loggedOutIndicator);
+        if (!loggedOutIndicator.equals(""))clientApi.authentication.setLoggedOutIndicator(contextId, loggedOutIndicator);  /* Add the logged out indicator */
+
+        Utils.lineBreak(listener);
+    }
+    /**
      * Set up User for the context and enable the User.
      * 
      * @param listener
@@ -1612,7 +1699,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         Utils.loggerMessage(listener, 1, "NEW USER ADDED [ SUCCESSFULLY ]", tempUsernameParam, username);
         Utils.loggerMessage(listener, 2, "{0}: {1}", tempUsernameParam, username);
         Utils.loggerMessage(listener, 2, "{0}: ****", tempPasswordParam);
-
+        
         /**
          * @class org.zaproxy.clientapi.gen.Users
          * 
@@ -1706,13 +1793,20 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      *            of type String: the name of the authentication script used to authenticate the user.
      * @param authScriptParams
      *            of type ArrayList<ZAPAuthScriptParam>: the authentication script parameters options and their associated values.
+     * @param hostname
+     *            of type String: the domain name to be used for authentication
+     * @param realm
+     *            of type String: the organization of the user to be used for authentication
+     * @param port
+     *            of type String: the port of domain name to be used for authentication
      * @return userId id of the newly setup user.
      * @throws ClientApiException
      * @throws UnsupportedEncodingException
      */
-    private String setUpAuthentication(BuildListener listener, ClientApi clientApi, String contextId, String loginURL, String username, String password, String loggedInIndicator, String loggedOutIndicator, String extraPostData, String authMethod, String usernameParameter, String passwordParameter, String scriptName, ArrayList<ZAPAuthScriptParam> authScriptParams) throws ClientApiException, UnsupportedEncodingException {
+    private String setUpAuthentication(BuildListener listener, ClientApi clientApi, String contextId, String loginURL, String username, String password, String loggedInIndicator, String loggedOutIndicator, String extraPostData, String authMethod, String usernameParameter, String passwordParameter, String scriptName, ArrayList<ZAPAuthScriptParam> authScriptParams, String hostname, String realm, String port) throws ClientApiException, UnsupportedEncodingException {
         if (authMethod.equals(FORM_BASED)) setUpFormBasedAuth(listener, clientApi, contextId, loginURL, loggedInIndicator, loggedOutIndicator, extraPostData, usernameParameter, passwordParameter);
         else if (authMethod.equals(SCRIPT_BASED)) setUpScriptBasedAuth(listener, clientApi, authScriptParams, contextId, loginURL, loggedInIndicator, loggedOutIndicator, extraPostData, scriptName);
+        else if (authMethod.equals(HTTP_BASED)) setUpHTTPBasedAuth(listener, clientApi, contextId, loginURL, loggedInIndicator, loggedOutIndicator, extraPostData, hostname, realm, port);
 
         return setUpUser(listener, clientApi, contextId, username, password);
     }
@@ -2945,7 +3039,20 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     private final ArrayList<ZAPAuthScriptParam> authScriptParams; /* List of all Authentication Script Parameters ArrayList because it needs to be Serializable (whereas List is not Serializable). */
 
     public List<ZAPAuthScriptParam> getAuthScriptParams() { return authScriptParams; }
-
+    
+    /* Session Properties >> HTTP Authentication */
+    private final String hostname;
+    
+    public String getHostname() { return hostname; }
+    
+    private final String realm;
+    
+    public String getRealm() { return realm; }
+    
+    private final String port;
+    
+    public String getPort() { return port; }
+    
     /* Attack Mode */
     private String targetURL; /* URL to attack by ZAP. */
 

@@ -166,6 +166,22 @@ SOFTWARE.
                 </f:block>
               </f:nested>
             </f:radioBlock>
+
+            <f:radioBlock title="${%jenkins.jobconfig.zap.session.properties.context.authentication.http-based.radioblock.label}" name="authMethod" value="HTTP_BASED" checked="${instance.isAuthMethod('HTTP_BASED')}" inline="true">
+              <f:nested>
+                <f:entry title=""></f:entry>
+                <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.authentication.http-based.hostname.textbox.label}" field="hostname">
+                  <f:textbox clazz="required" />
+                </f:entry>
+                <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.authentication.http-based.realm.textbox.label}" field="realm">
+                  <f:textbox clazz="" />
+                </f:entry>
+                <f:entry title="${%jenkins.jobconfig.zap.session.properties.context.authentication.http-based.port.textbox.label}" field="port">
+                  <f:textbox clazz="required" />
+                </f:entry>
+              </f:nested>
+            </f:radioBlock>
+
             <f:entry title="------------------------------------------------------------"></f:entry>
           </table>
         </f:entry>
