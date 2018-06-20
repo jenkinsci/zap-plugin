@@ -577,7 +577,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                 else throw new IllegalArgumentException("LOAD SESSION IS MISSING, PROVIDED [ " + this.loadSession + " ]");
             }
         }
-
+        
         this.evaluatedContextName = envVars.expand(this.evaluatedContextName);
         if (this.evaluatedContextName == null || this.evaluatedContextName.isEmpty()) this.evaluatedContextName = "Jenkins Default Context";
         else Utils.loggerMessage(listener, 1, "(EXP) CONTEXT NAME = [ {0} ]", this.evaluatedContextName);
@@ -593,6 +593,9 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         if (this.evaluatedTargetURL == null || this.evaluatedTargetURL.isEmpty()) throw new IllegalArgumentException("STARTING POINT (URL) IS MISSING, PROVIDED [ " + this.evaluatedTargetURL + " ]");
         else Utils.loggerMessage(listener, 1, "(EXP) STARTING POINT (URL) = [ {0} ]", this.evaluatedTargetURL);
 
+        if (this.selectedSessionManagementMethod == null || this.selectedSessionManagementMethod.isEmpty()) throw new IllegalArgumentException("SESSION MANAGEMENT METHOD IS NOT SPECIFIED [ " + this.selectedSessionManagementMethod +" ]");
+        else Utils.loggerMessage(listener, 1, "(EXP) SESSION MANAGEMENT METHOD = [ {0} ]", this.selectedSessionManagementMethod);
+        
         if (this.generateReports) {
             this.evaluatedReportFilename = envVars.expand(this.evaluatedReportFilename);
             if (this.evaluatedReportFilename == null || this.evaluatedReportFilename.isEmpty()) throw new IllegalArgumentException("REPORT FILENAME IS MISSING, PROVIDED [ " + this.evaluatedReportFilename + " ]");
