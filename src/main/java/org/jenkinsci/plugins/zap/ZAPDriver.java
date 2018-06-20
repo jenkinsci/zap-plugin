@@ -130,7 +130,12 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     private static final String NAME_REPORT_DIR = "reports";
     static final String FILENAME_LOG = "zap.log";
     static final String NAME_LOG_DIR = "logs";
-
+    
+    /* Context session management methods */
+    private static final String COOKIE_BASED_SESSION = "cookieBasedSessionManagement";
+    private static final String HTTP_AUTH_SESSION = "httpAuthSessionManagement";
+    
+    /* Context authentication methods */
     private static final String FORM_BASED = "FORM_BASED";
     private static final String SCRIPT_BASED = "SCRIPT_BASED";
     private static final String HTTP_BASED = "HTTP_BASED";
@@ -164,6 +169,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
             String zapSettingsDir,
             boolean autoLoadSession, String loadSession, String sessionFilename, boolean removeExternalSites, String internalSites,
             String contextName, String includedURL, String excludedURL,
+            String selectedSessionManagementMethod,
             String alertFilters,
             boolean authMode, String username, String password, String loggedInIndicator, String loggedOutIndicator, String authMethod,
             String loginURL, String usernameParameter, String passwordParameter, String extraPostData,
@@ -204,6 +210,9 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         this.includedURL = includedURL;
         this.excludedURL = excludedURL;
 
+            /* Session Properties >> Context Session Management Method */
+        this.selectedSessionManagementMethod = selectedSessionManagementMethod;
+        
         /* Session Properties >> Alert Filters */
         this.alertFilters = alertFilters;
 
@@ -334,6 +343,10 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         s += "includedURL [" + includedURL + "]\n";
         s += "excludedURL [" + excludedURL + "]\n";
         s += "\n";
+        s += "Session Properties >> Context Session Management\n";
+        s += "-------------------------------------------------------\n";
+        s += "sessionManagementMethod [" + selectedSessionManagementMethod + "]\n";
+        s += "\n";
         s += "Session Properties >> Alert Filters\n";
         s += "-------------------------------------------------------\n";
         s += "alertFilters [" + alertFilters + "]\n";
@@ -448,6 +461,18 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     public String isSelectedReportMethod(String testTypeName) {
         return this.selectedReportMethod.equalsIgnoreCase(testTypeName) ? "true" : "";
     }
+    
+    /**
+     * Test if the report method types names match (for marking the radio button).
+     *
+     * @param testTypeName
+     *            of type String: representation of the test type
+     * @return of type String: whether or not the test type string matches.
+     */
+    public String isSelectedSessionManagementMethod(String testTypeName) {
+        return this.selectedSessionManagementMethod.equalsIgnoreCase(testTypeName) ? "true" : "";
+    }
+    
 
     /**
      * Get the ZAP_HOME setup by Custom Tools Plugin or already present on the build's machine.
@@ -1182,21 +1207,26 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                 /* SETUP CONTEXT */
                 this.contextId = setUpContext(listener, clientApi, this.evaluatedContextName, this.evaluatedIncludedURL, this.evaluatedExcludedURL);
 
+                /* SETUP SESSION MANAGEMENT METHOD */
+                Utils.lineBreak(listener);
+                Utils.loggerMessage(listener, 0, "[{0}] SESSION MANAGMENT METHOD [ {1} ]", Utils.ZAP, String.valueOf(this.selectedSessionManagementMethod).toUpperCase());
+                setUpSessionManagementMethod(listener, clientApi, this.contextId, this.selectedSessionManagementMethod, null);
+                
                 /* SETUP ALERT FILTERS */
                 Utils.lineBreak(listener);
                 setUpAlertFilters(listener, clientApi, this.alertFilters);
 
+                /* SETUP AUTHENICATION */
                 Utils.lineBreak(listener);
                 Utils.loggerMessage(listener, 0, "[{0}] AUTHENTICATION ENABLED [ {1} ]", Utils.ZAP, String.valueOf(this.authMode).toUpperCase());
                 Utils.loggerMessage(listener, 0, "[{0}] AUTHENTICATION MODE [ {1} ]", Utils.ZAP, this.authMethod.toUpperCase());
                 Utils.lineBreak(listener);
-                /* SETUP AUTHENICATION */
-                /* SETUP AUTHENICATION */
                 if (this.authMode) {
                     if (this.authMethod.equals(FORM_BASED)) this.userId = setUpAuthentication(listener, clientApi, this.contextId, this.loginURL, this.username, this.password, this.loggedInIndicator, this.loggedOutIndicator, this.extraPostData, this.authMethod, this.usernameParameter, this.passwordParameter, null, null, null, null, null);
                     else if (this.authMethod.equals(SCRIPT_BASED)) this.userId = setUpAuthentication(listener, clientApi, this.contextId, this.loginURL, this.username, this.password, this.loggedInIndicator, this.loggedOutIndicator, this.extraPostData, this.authMethod, null, null, this.authScript, this.authScriptParams, null, null, null);
                     else if (this.authMethod.equals(HTTP_BASED)) this.userId = setUpAuthentication(listener, clientApi, this.contextId, this.loginURL, this.username, this.password, this.loggedInIndicator, this.loggedOutIndicator, this.extraPostData, this.authMethod, null, null, null, null, this.hostname, this.realm, this.port);
                 }
+                
                 /* SETUP ATTACK MODES */
                 Utils.lineBreak(listener);
                 Utils.loggerMessage(listener, 0, "[{0}] ATTACK MODE(S) INITIATED", Utils.ZAP);
@@ -1631,6 +1661,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
         Utils.lineBreak(listener);
     }
+    
     /**
      * Set up User for the context and enable the User.
      * 
@@ -1875,8 +1906,38 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
             }
         }
     }
-
-
+    
+    /** Method which will setup session management method for the created context 
+     *
+     * @param listener
+     *            of type BuildListener: the display log listener during the Jenkins job execution.
+     * @param clientApi
+     *            of type ClientApi: the ZAP client API to call method.
+     * @param contextId
+     *            of type String: ID of the created context.
+     * @param selectedSessionManagementMethod
+     *            of type String: (cookieBasedSessionManagement, httpAuthSessionManagement)
+     * @param methodConfigParams
+     *            of type String
+     * 
+     * @throws ClientApiException 
+     */
+    private void setUpSessionManagementMethod(BuildListener listener, ClientApi clientApi, String contextId, String selectedSessionManagementMethod, String methodConfigParams) throws ClientApiException{
+        /** 
+         * @class org.zaproxy.clientapi.gen.SessionManagement
+         * 
+         * @method setSessionManagementMethod
+         * 
+         * @param String apikey
+         * @param String contextId
+         * @param String selectedSessionManagementMethod
+         * @param String methodConfigParams
+         * 
+         * @throws ClientApiException
+         */
+        clientApi.sessionManagement.setSessionManagementMethod(contextId, selectedSessionManagementMethod, methodConfigParams);
+    }
+    
     /**
      * Search for all links and pages on the URL and raised passives alerts.
      * 
@@ -2269,6 +2330,13 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
             arr.add(EXPORT_REPORT_FORMAT_JSON);
             return arr;
         }
+        
+        public List<String> getAllSessionManagementMethods(){
+            ArrayList<String> arr = new ArrayList<String>();
+            arr.add(COOKIE_BASED_SESSION);
+            arr.add(HTTP_AUTH_SESSION);
+            return arr;
+        }
 
         /**
          * In order to load the persisted global configuration, you have to call load() in the constructor.
@@ -2438,6 +2506,18 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
             if (exportreportReportDescription.contains(";")) return FormValidation.error("Field cannot contain the character ';'");
             if (exportreportReportDescription.contains("\n")) return FormValidation.error("Field cannot contain line breaks");
             return FormValidation.ok();
+        }
+        
+        /**
+         * List model to choose session management method
+         * 
+         * @return items {@link ListBoxModel}
+         */
+        public ListBoxModel doFillSessionManagementMethodItems() {
+            ListBoxModel items = new ListBoxModel();
+            for (String method : getAllSessionManagementMethods())
+                items.add(method);
+            return items;
         }
 
         /**
@@ -2981,6 +3061,11 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
     public void setEvaluatedIncludedURL(String evaluatedIncludedURL) { this.evaluatedIncludedURL = evaluatedIncludedURL; }
 
+    /* Session Properties >> Session Management */
+    private final String selectedSessionManagementMethod;
+    public String getSelectedSessionManagementMethod(){ return selectedSessionManagementMethod; }
+    
+    
     /* Session Properties >> Alert Filters */
     private final String alertFilters; /* The alert filters file to use for the context. It contains only the alert filters filename (without extension). */
 
