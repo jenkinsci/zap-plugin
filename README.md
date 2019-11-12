@@ -10,14 +10,14 @@
 
 <br />
 
-[Official OWASP Zed Attack Proxy Jenkins Plugin](https://wiki.jenkins-ci.org/display/JENKINS/zap+plugin)
+[OWASP Zed Attack Proxy Jenkins Plugin](https://wiki.jenkins-ci.org/display/JENKINS/zap+plugin)
 ==============================================
 
 <br />
 
 The OWASP Zed Attack Proxy (<b>[ZAP](https://www.owasp.org/index.php/OWASP_Zed_Attack_Proxy_Project)</b>) is one of the world’s most popular free security tools and is actively maintained by hundreds of international volunteers. It can help you automatically find security vulnerabilities in your web applications while you are developing and testing your applications. Its also a great tool for experienced pentesters to use for manual security testing.
 
-The <b>[Official OWASP ZAP Jenkins Plugin](https://wiki.jenkins-ci.org/display/JENKINS/zap+plugin)</b> extends the functionality of the <b>[ZAP](https://www.owasp.org/index.php/OWASP_Zed_Attack_Proxy_Project)</b> security tool into a CI Environment.
+The <b>[OWASP ZAP Jenkins Plugin](https://wiki.jenkins-ci.org/display/JENKINS/zap+plugin)</b> extends the functionality of the <b>[ZAP](https://www.owasp.org/index.php/OWASP_Zed_Attack_Proxy_Project)</b> security tool into a CI Environment.
 
   - Manage Sessions (Load or Persist)
   - Define Context (Name, Include URLs and Exclude URLs)
