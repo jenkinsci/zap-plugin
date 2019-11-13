@@ -118,6 +118,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     /* Folder names and file extensions */
     private static final String FILE_POLICY_EXTENSION = ".policy";
     private static final String FILE_ALERTS_FILTER_EXTENSION = ".alertfilter";
+    private static final String FILE_CONTEXT_NAME_EXTENSION = ".context";
     private static final String FILE_SESSION_EXTENSION = ".session";
     private static final String FILE_AUTH_SCRIPTS_JS_EXTENSION = ".js";
     private static final String FILE_AUTH_SCRIPTS_ZEST_EXTENSION = ".zst";
@@ -125,6 +126,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     private static final String NAME_PLUGIN_DIR_ZAP = "plugin";
     static final String NAME_POLICIES_DIR_ZAP = "policies";
     static final String NAME_ALERT_FILTERS_DIR_ZAP = "alertfilters";
+    static final String NAME_CONTEXT_NAME_DIR_ZAP = "contexts";
     private static final String NAME_SCRIPTS_DIR_ZAP = "scripts";
     private static final String NAME_AUTH_SCRIPTS_DIR_ZAP = "authentication";
     private static final String NAME_REPORT_DIR = "reports";
@@ -162,8 +164,8 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     public ZAPDriver(boolean autoInstall, String toolUsed, String zapHome, String jdk, int timeout,
             String zapSettingsDir,
             boolean autoLoadSession, String loadSession, String sessionFilename, boolean removeExternalSites, String internalSites,
-            String contextName, String includedURL, String excludedURL,
-            String alertFilters,
+            boolean autoLoadContext, String contextName, String includedURL, String excludedURL,
+            String alertFilters,String loadContext,
             boolean authMode, String username, String password, String loggedInIndicator, String loggedOutIndicator, String authMethod,
             String loginURL, String usernameParameter, String passwordParameter, String extraPostData,
             String authScript, List<ZAPAuthScriptParam> authScriptParams,
@@ -198,9 +200,11 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         this.internalSites = internalSites;
 
         /* Session Properties */
+        this.autoLoadContext = autoLoadContext;
         this.contextName = contextName;
         this.includedURL = includedURL;
         this.excludedURL = excludedURL;
+        this.loadContext = loadContext;
 
         /* Session Properties >> Alert Filters */
         this.alertFilters = alertFilters;
@@ -323,6 +327,8 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         s += "\n";
         s += "Session Properties\n";
         s += "-------------------------------------------------------\n";
+        s += "autoLoadContext [" + autoLoadContext + "]\n";
+        s += "loadContext [" + loadContext + "]\n";
         s += "contextName [" + contextName + "]\n";
         s += "includedURL [" + includedURL + "]\n";
         s += "excludedURL [" + excludedURL + "]\n";
@@ -534,6 +540,8 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                 }
             }
             else throw new IllegalArgumentException("LOADED SESSION FILES CANNOT BE USED IN PRE-BUILD");
+
+            if(this.autoLoadContext)throw new IllegalArgumentException("LOADED CONTEXT FILES CANNOT BE USED IN PRE-BUILD");
         }
         else {
             if (this.autoLoadSession) {
@@ -542,17 +550,25 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
             }
         }
 
-        this.evaluatedContextName = envVars.expand(this.evaluatedContextName);
-        if (this.evaluatedContextName == null || this.evaluatedContextName.isEmpty()) this.evaluatedContextName = "Jenkins Default Context";
-        else Utils.loggerMessage(listener, 1, "(EXP) CONTEXT NAME = [ {0} ]", this.evaluatedContextName);
+        if(this.autoLoadContext) {
+            if (this.loadContext != null && this.loadContext.length() != 0) Utils.loggerMessage(listener, 1, "(EXP) LOAD CONTEXT = [ {0} ]", this.loadContext);
+            else throw new IllegalArgumentException("LOAD CONTEXT IS MISSING, PROVIDED [ " + this.loadContext + " ]");
+        } else {
 
-        this.evaluatedIncludedURL = envVars.expand(this.evaluatedIncludedURL);
-        if (this.evaluatedIncludedURL == null || this.evaluatedIncludedURL.isEmpty()) throw new IllegalArgumentException("INCLUDE IN CONTEXT IS MISSING, PROVIDED [ " + this.evaluatedIncludedURL + " ]");
-        else Utils.loggerMessage(listener, 1, "(EXP) INCLUDE IN CONTEXT = [ {0} ]", this.evaluatedIncludedURL.trim().replace("\n", ", "));
+            this.evaluatedContextName = envVars.expand(this.evaluatedContextName);
+            if (this.evaluatedContextName == null || this.evaluatedContextName.isEmpty())
+                this.evaluatedContextName = "Jenkins Default Context";
+            else Utils.loggerMessage(listener, 1, "(EXP) CONTEXT NAME = [ {0} ]", this.evaluatedContextName);
 
-        this.evaluatedExcludedURL = envVars.expand(this.evaluatedExcludedURL);
-        Utils.loggerMessage(listener, 1, "(EXP) EXCLUDE FROM CONTEXT = [ {0} ]", this.evaluatedExcludedURL.trim().replace("\n", ", "));
+            this.evaluatedIncludedURL = envVars.expand(this.evaluatedIncludedURL);
+            if (this.evaluatedIncludedURL == null || this.evaluatedIncludedURL.isEmpty())
+                throw new IllegalArgumentException("INCLUDE IN CONTEXT IS MISSING, PROVIDED [ " + this.evaluatedIncludedURL + " ]");
+            else
+                Utils.loggerMessage(listener, 1, "(EXP) INCLUDE IN CONTEXT = [ {0} ]", this.evaluatedIncludedURL.trim().replace("\n", ", "));
 
+            this.evaluatedExcludedURL = envVars.expand(this.evaluatedExcludedURL);
+            Utils.loggerMessage(listener, 1, "(EXP) EXCLUDE FROM CONTEXT = [ {0} ]", this.evaluatedExcludedURL.trim().replace("\n", ", "));
+        }
         this.evaluatedTargetURL = envVars.expand(this.evaluatedTargetURL);
         if (this.evaluatedTargetURL == null || this.evaluatedTargetURL.isEmpty()) throw new IllegalArgumentException("STARTING POINT (URL) IS MISSING, PROVIDED [ " + this.evaluatedTargetURL + " ]");
         else Utils.loggerMessage(listener, 1, "(EXP) STARTING POINT (URL) = [ {0} ]", this.evaluatedTargetURL);
@@ -1168,21 +1184,41 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
             }
 
             if (buildSuccess) {
-                /* SETUP CONTEXT */
-                this.contextId = setUpContext(listener, clientApi, this.evaluatedContextName, this.evaluatedIncludedURL, this.evaluatedExcludedURL);
 
-                /* SETUP ALERT FILTERS */
-                Utils.lineBreak(listener);
-                setUpAlertFilters(listener, clientApi, this.alertFilters);
+                if(this.autoLoadContext){
+                    /* LOAD CONTEXT */
+                    File contextFile = new File(this.loadContext);
+                    Utils.loggerMessage(listener, 0, "[{0}] LOAD CONTEXT AT: [ {1} ]", Utils.ZAP, contextFile.getAbsolutePath());
+                                        /*
+                     * @class org.zaproxy.clientapi.gen.context
+                     *
+                     * @method importContext
+                     *
+                     * @param String apikey
+                     * @param String name
+                     *
+                     * @throws ClientApiException
+                     */
+                    this.contextId = extractContextId(clientApi.context.importContext(contextFile.getAbsolutePath()));
 
-                Utils.lineBreak(listener);
-                Utils.loggerMessage(listener, 0, "[{0}] AUTHENTICATION ENABLED [ {1} ]", Utils.ZAP, String.valueOf(this.authMode).toUpperCase());
-                Utils.loggerMessage(listener, 0, "[{0}] AUTHENTICATION MODE [ {1} ]", Utils.ZAP, this.authMethod.toUpperCase());
-                Utils.lineBreak(listener);
-                /* SETUP AUTHENICATION */
-                if (this.authMode) if (this.authMethod.equals(FORM_BASED)) this.userId = setUpAuthentication(listener, clientApi, this.contextId, this.loginURL, this.username, this.password, this.loggedInIndicator, this.loggedOutIndicator, this.extraPostData, this.authMethod, this.usernameParameter, this.passwordParameter, null, null);
-                else if (this.authMethod.equals(SCRIPT_BASED)) this.userId = setUpAuthentication(listener, clientApi, this.contextId, this.loginURL, this.username, this.password, this.loggedInIndicator, this.loggedOutIndicator, this.extraPostData, this.authMethod, null, null, this.authScript, this.authScriptParams);
+                }else {
+                    /* SETUP CONTEXT */
+                    this.contextId = setUpContext(listener, clientApi, this.evaluatedContextName, this.evaluatedIncludedURL, this.evaluatedExcludedURL);
 
+                    /* SETUP ALERT FILTERS */
+                    Utils.lineBreak(listener);
+                    setUpAlertFilters(listener, clientApi, this.alertFilters);
+
+                    Utils.lineBreak(listener);
+                    Utils.loggerMessage(listener, 0, "[{0}] AUTHENTICATION ENABLED [ {1} ]", Utils.ZAP, String.valueOf(this.authMode).toUpperCase());
+                    Utils.loggerMessage(listener, 0, "[{0}] AUTHENTICATION MODE [ {1} ]", Utils.ZAP, this.authMethod.toUpperCase());
+                    Utils.lineBreak(listener);
+                    /* SETUP AUTHENICATION */
+                    if (this.authMode) if (this.authMethod.equals(FORM_BASED))
+                        this.userId = setUpAuthentication(listener, clientApi, this.contextId, this.loginURL, this.username, this.password, this.loggedInIndicator, this.loggedOutIndicator, this.extraPostData, this.authMethod, this.usernameParameter, this.passwordParameter, null, null);
+                    else if (this.authMethod.equals(SCRIPT_BASED))
+                        this.userId = setUpAuthentication(listener, clientApi, this.contextId, this.loginURL, this.username, this.password, this.loggedInIndicator, this.loggedOutIndicator, this.extraPostData, this.authMethod, null, null, this.authScript, this.authScriptParams);
+                }
                 /* SETUP ATTACK MODES */
                 Utils.lineBreak(listener);
                 Utils.loggerMessage(listener, 0, "[{0}] ATTACK MODE(S) INITIATED", Utils.ZAP);
@@ -2227,6 +2263,16 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
             if (loadSession == null || loadSession.isEmpty()) return FormValidation.error("Field is required");
             return FormValidation.ok();
         }
+        /**
+         * Todo
+         *
+         * @param loadContext
+         * @return
+         */
+        public FormValidation doCheckLoadContext(@QueryParameter("loadContext") final String loadContext) {
+            if (loadContext == null || loadContext.isEmpty()) return FormValidation.error("Field is required");
+            return FormValidation.ok();
+        }
 
         /**
          * Todo
@@ -2415,6 +2461,49 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         }
 
         /**
+         * List model to choose the context file to use by ZAProxy scan. It's called on the remote machine (if present) to load all context in the ZAP default dir of the build's machine.
+         *
+         * @return a {@link ListBoxModel}. It can be empty if zapSettingsDir doesn't contain any policy file.
+         */
+        public ListBoxModel doFillLoadContextItems() throws IOException, InterruptedException {
+            ListBoxModel items = new ListBoxModel();
+
+            /* No workspace before the first build, so workspace is null. */
+            if (workspace != null) {
+                Collection<String> sessionsInString = workspace.act(new FileCallable<Collection<String>>() {
+
+                    private static final long serialVersionUID = 1L;
+
+                    @Override
+                    public Collection<String> invoke(File f, VirtualChannel channel) {
+
+                        /* List all files with FILE_SESSION_EXTENSION on the machine where the workspace is located. */
+                        Collection<File> colFiles = FileUtils.listFiles(f, FileFilterUtils.suffixFileFilter(FILE_CONTEXT_NAME_EXTENSION), TrueFileFilter.INSTANCE);
+
+                        Collection<String> colString = new ArrayList<String>();
+
+                        /* "Transform" File into String */
+                        for (File file : colFiles)
+                            colString.add(file.getAbsolutePath());
+                        /* The following line is to remove the full path to the workspace, keep just the relative path to the session colString.add(file.getAbsolutePath().replace(workspace.getRemote() + File.separatorChar, "")); */
+                        return colString;
+                    }
+
+                    @Override
+                    public void checkRoles(RoleChecker checker) throws SecurityException { /* N/A */ }
+                });
+
+                items.add(""); /* To not load a session, add a blank choice. */
+
+                for (String s : sessionsInString)
+                    items.add(s);
+            }
+
+            return items;
+        }
+
+
+        /**
          * List model to choose the policy file to use by ZAProxy scan. It's called on the remote machine (if present) to load all policy files in the ZAP default dir of the build's machine.
          *
          * @param zapSettingsDir
@@ -2519,7 +2608,10 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
             return items;
         }
+
     }
+
+
 
     /**
      * This class allows to search all ZAP xml alert filter files in the ZAP default dir of the remote machine (or local machine if there is no remote machine).
@@ -2555,6 +2647,48 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                 };
                 /* Returns pathnames for files and directory. */
                 listFiles = alertFiltersFile.listFiles(filter);
+            }
+            return listFiles;
+        }
+
+        @Override
+        public void checkRoles(RoleChecker checker) throws SecurityException { /* N/A */ }
+    }
+
+    /**
+     * This class allows to search all ZAP xml alert filter files in the ZAP default dir of the remote machine (or local machine if there is no remote machine).
+     */
+    private static class LoadContextCallable implements FileCallable<File[]> {
+
+        private static final long serialVersionUID = 1L;
+
+        private String zapSettingsDir;
+
+        public LoadContextCallable(String zapSettingsDir) { this.zapSettingsDir = zapSettingsDir; }
+
+        @Override
+        public File[] invoke(File f, VirtualChannel channel) {
+            File[] listFiles = {};
+
+            Path pathLoadContextDir = Paths.get(zapSettingsDir, NAME_CONTEXT_NAME_DIR_ZAP);
+
+            if (Files.isDirectory(pathLoadContextDir)) {
+                File loadContextFile = pathLoadContextDir.toFile();
+                /* Create new filename filter (get only file with FILE_ALERTS_FILTER_EXTENSION extension). */
+                FilenameFilter filter = new FilenameFilter() {
+
+                    @Override
+                    public boolean accept(File dir, String name) {
+                        if (name.lastIndexOf('.') > 0) {
+                            int lastIndex = name.lastIndexOf('.'); /* Get last index for '.' char. */
+                            String str = name.substring(lastIndex); /* Get the extension. */
+                            if (str.equals(FILE_CONTEXT_NAME_EXTENSION)) return true; /* Match path name extension. */
+                        }
+                        return false;
+                    }
+                };
+                /* Returns pathnames for files and directory. */
+                listFiles = loadContextFile.listFiles(filter);
             }
             return listFiles;
         }
@@ -2857,6 +2991,15 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     public void setEvaluatedInternalSites(String evaluatedInternalSites) { this.evaluatedInternalSites = evaluatedInternalSites; }
 
     /* Session Properties */
+
+    private final boolean autoLoadContext;
+
+    public boolean getAutoLoadContext() { return autoLoadContext; }
+
+    private final String loadContext; /* The context file to import. It contains only the context filename (without extension). */
+
+    public String getLoadContext() { return loadContext; }
+
     private final String contextName; /* Context name to use for the session. */
 
     public String getContextName() { return contextName; }
