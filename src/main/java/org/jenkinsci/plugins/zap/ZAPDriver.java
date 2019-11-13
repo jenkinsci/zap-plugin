@@ -1111,7 +1111,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                     }
                 }
                 if (count == 0) {
-                    Utils.loggerMessage(listener, 1, "REQUIRED PLUGIN(S) ARE MISSING");
+                    Utils.loggerMessage(listener, 1, "REQUIRED PLUGIN(S) ARE MISSING: [ {0} or {1} ]", ZAP_PLUGIN_EXPORT_REPORT, ZAP_PLUGIN_JIRA_ISSUE_CREATOR);
                     buildSuccess = false;
                 }
             }
