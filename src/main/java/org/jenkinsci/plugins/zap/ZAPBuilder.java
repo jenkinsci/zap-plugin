@@ -61,7 +61,7 @@ import net.sf.json.JSONObject;
 
 /**
  * The main class of the plugin. This class adds a build step in a Jenkins job that allows you to launch the ZAP security tool and generate reports based on the alerts.
- * 
+ *
  * @author Goran Sarenkapa
  * @author Mostafa AbdelMoez
  * @author Tanguy de Lignières
@@ -69,13 +69,13 @@ import net.sf.json.JSONObject;
  * @author Thilina Madhusanka
  * @author Johann Ollivier-Lapeyre
  * @author Ludovic Roucoux
- * 
+ *
  */
 public class ZAPBuilder extends Builder {
 
     /**
      * The @DataBoundConstructor is a constructor and it's parameter names must match the fields in associated config file {@link "com/github/jenkinsci/zaproxyplugin/ZAPBuilder/config.jelly"} and additional can set the parameter values for the global configurations {@link "com/github/jenkinsci/zaproxyplugin/ZAPBuilder/global.jelly"}.
-     * 
+     *
      * @param startZAPFirst
      *            of type boolean: start zap as a pre-build step or not.
      * @param zapHost
@@ -128,6 +128,52 @@ public class ZAPBuilder extends Builder {
         Utils.lineBreak(listener);
         Utils.loggerMessage(listener, 0, "[{0}] START PRE-BUILD ENVIRONMENT VARIABLE REPLACEMENT", Utils.ZAP);
 
+        /* Start ZAP as a Pre-Build step. */
+        if (startZAPFirst) {
+            initializeZapProxy(build, listener, false);
+
+            Utils.lineBreak(listener);
+            Utils.loggerMessage(listener, 0, "[{0}] START PRE-BUILD STEP", Utils.ZAP);
+            Utils.lineBreak(listener);
+
+            try {
+                Launcher launcher = null;
+                Node node = build.getBuiltOn();
+
+                /* Create launcher according to the build's location (Master or Slave) and the build's OS */
+                if ("".equals(node.getNodeName())) launcher = new LocalLauncher(listener, build.getWorkspace().getChannel());
+                else { /* Build on slave */
+                    boolean isUnix;
+                    if ("Unix".equals(((SlaveComputer) node.toComputer()).getOSDescription())) isUnix = true;
+                    else isUnix = false;
+                    launcher = new RemoteLauncher(listener, build.getWorkspace().getChannel(), isUnix);
+                }
+                proc = zaproxy.startZAP(build, listener, launcher);
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+                listener.error(ExceptionUtils.getStackTrace(e));
+                return false;
+            }
+            Utils.loggerMessage(listener, 0, "[{0}] END PRE-BUILD STEP", Utils.ZAP);
+            Utils.lineBreak(listener);
+            Utils.loggerMessage(listener, 0, "[{0}] COMMENCEMENT OF SELENIUM SCRIPTS, ZAP WILL NOW LISTEN ON THE DESIGNATED PORT", Utils.ZAP);
+            Utils.lineBreak(listener);
+        }
+        return true;
+    }
+
+    /**
+     * Initialise the ZAP Proxy and perform variable substitution.
+     *
+     * @param build  The builder object is use.
+     * @param listener  The build listener.
+     * @param calledDuringBuild  flag to indicate where in the build process this was called from.
+     */
+    protected void initializeZapProxy(
+            final AbstractBuild<?, ?> build,
+            final BuildListener listener,
+            final boolean calledDuringBuild)  {
         /* Replaces the environment variables with the corresponding values */
         String zapHost = zaproxy.getZapHost();
         if (zapHost == null || zapHost.isEmpty()) throw new IllegalArgumentException("ZAP HOST IS MISSING");
@@ -208,10 +254,18 @@ public class ZAPBuilder extends Builder {
                 listFiles = ws.act(new LogCallable(this.zaproxy.getZapSettingsDir()));
             }
             catch (IOException e) {
-                e.printStackTrace(); /* No listener because it's not during a build but it's on the job config page. */
+                if (calledDuringBuild) {
+                    listener.error("IOxception occured during build", e);
+                } else {
+                    e.printStackTrace(); /* No listener because it's not during a build but it's on the job config page. */
+                }
             }
             catch (InterruptedException e) {
-                e.printStackTrace(); /* No listener because it's not during a build but it's on the job config page. */
+                if (calledDuringBuild) {
+                    listener.error("InterruptedException occured during build", e);
+                } else {
+                    e.printStackTrace(); /* No listener because it's not during a build but it's on the job config page. */
+                }
             }
 
             Utils.loggerMessage(listener, 1, "CLEARING ZAP HOME DIRECTORY/{0}", ZAPDriver.NAME_LOG_DIR.toUpperCase());
@@ -224,47 +278,24 @@ public class ZAPBuilder extends Builder {
                     stringForLogger = ws.act(new DeleteFileCallable(listFile.getAbsolutePath(), stringForLogger));
                 }
                 catch (IOException e) {
-                    e.printStackTrace();
+                    if (calledDuringBuild) {
+                        listener.error("IOxception occured during build", e);
+                    } else {
+                        e.printStackTrace();
+                    }
                 }
                 catch (InterruptedException e) {
-                    e.printStackTrace();
+                    if (calledDuringBuild) {
+                        listener.error("InterruptedException occured during build", e);
+                    } else {
+                        e.printStackTrace();
+                    }
                 }
                 Utils.loggerMessage(listener, 1, "{0}", stringForLogger);
                 Utils.lineBreak(listener);
             }
         }
 
-        /* Start ZAP as a Pre-Build step. */
-        if (startZAPFirst) {
-            Utils.lineBreak(listener);
-            Utils.loggerMessage(listener, 0, "[{0}] START PRE-BUILD STEP", Utils.ZAP);
-            Utils.lineBreak(listener);
-
-            try {
-                Launcher launcher = null;
-                Node node = build.getBuiltOn();
-
-                /* Create launcher according to the build's location (Master or Slave) and the build's OS */
-                if ("".equals(node.getNodeName())) launcher = new LocalLauncher(listener, build.getWorkspace().getChannel());
-                else { /* Build on slave */
-                    boolean isUnix;
-                    if ("Unix".equals(((SlaveComputer) node.toComputer()).getOSDescription())) isUnix = true;
-                    else isUnix = false;
-                    launcher = new RemoteLauncher(listener, build.getWorkspace().getChannel(), isUnix);
-                }
-                proc = zaproxy.startZAP(build, listener, launcher);
-            }
-            catch (Exception e) {
-                e.printStackTrace();
-                listener.error(ExceptionUtils.getStackTrace(e));
-                return false;
-            }
-            Utils.loggerMessage(listener, 0, "[{0}] END PRE-BUILD STEP", Utils.ZAP);
-            Utils.lineBreak(listener);
-            Utils.loggerMessage(listener, 0, "[{0}] COMMENCEMENT OF SELENIUM SCRIPTS, ZAP WILL NOW LISTEN ON THE DESIGNATED PORT", Utils.ZAP);
-            Utils.lineBreak(listener);
-        }
-        return true;
     }
 
     /** Method called when the build is launching */
@@ -274,6 +305,9 @@ public class ZAPBuilder extends Builder {
             Utils.lineBreak(listener);
             Utils.loggerMessage(listener, 0, "[{0}] START BUILD STEP", Utils.ZAP);
             Utils.lineBreak(listener);
+
+            initializeZapProxy(build, listener, true);
+
             proc = zaproxy.startZAP(build, listener, launcher);
         }
         catch (Exception e) {
@@ -362,13 +396,13 @@ public class ZAPBuilder extends Builder {
 
     /**
      * @Extension indicates to Jenkins this is an implementation of an extension point.
-     * 
+     *
      * Descriptor for {@link ZAPBuilder}. Used as a singleton. The class is marked as public so that it can be accessed from views.
      *
      * <p>
      * See <tt>src/main/resources/com/github/jenkinsci/zaproxyplugin/ZAPBuilder/*.jelly</tt> for the actual HTML fragment for the configuration screen.
      */
-    @Extension 
+    @Extension
     public static final ZAPBuilderDescriptorImpl DESCRIPTOR = new ZAPBuilderDescriptorImpl();
 
     public static final class ZAPBuilderDescriptorImpl extends BuildStepDescriptor<Builder> {
@@ -497,7 +531,7 @@ public class ZAPBuilder extends Builder {
         private File sourceFile;
         private String destination;
         private String stringForLogger;
-        
+
         public CopyFileCallable(File sourceFile, String destination, String stringForLogger) {
             this.sourceFile = sourceFile;
             this.destination = destination;
