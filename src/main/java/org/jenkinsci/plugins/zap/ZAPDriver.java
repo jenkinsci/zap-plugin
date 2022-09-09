@@ -1737,6 +1737,8 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
             File alertFiltersFile = pathAlertFiltersDir.toFile();
 
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+            dbFactory.setAttribute(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false);//Remediation
+            dbFactory.setAttribute(XMLInputFactory.SUPPORT_DTD, false); //Remediation
             DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
             Document doc = dBuilder.parse(alertFiltersFile);
             doc.getDocumentElement().normalize();
